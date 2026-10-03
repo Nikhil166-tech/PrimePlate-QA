@@ -39,6 +39,27 @@ import { DataImportModule } from './data-import/data-import.module';
 import { QaSeedModule } from './qa-seed/qa-seed.module';
 import { AppController } from './app.controller';
 
+export const appEntities = [
+  User,
+  MealProvider,
+  MealPlan,
+  Subscription,
+  Payment,
+  PaymentWebhookEvent,
+  Review,
+  WeeklyMenu,
+  PasswordResetToken,
+  ProviderEarning,
+  ProviderSettlementAudit,
+  SupportTicket,
+  MealUsage,
+  MealUsageAudit,
+  MealRecovery,
+  SystemSetting,
+  SystemSettingAudit,
+  DataImport,
+];
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
@@ -63,7 +84,7 @@ import { AppController } from './app.controller';
             url: sanitizedUrl,
             synchronize: false, // Strictly disabled in production
             migrationsRun: true, // Automatically execute pending migrations on startup
-            entities: [__dirname + '/**/*.entity{.ts,.js}'],
+            entities: appEntities,
             migrations: [__dirname + '/migrations/[0-9]*-*{.ts,.js}'],
             ssl: useSsl ? { rejectUnauthorized: false } : false,
             extra: {
@@ -77,31 +98,12 @@ import { AppController } from './app.controller';
           type: 'better-sqlite3',
           database: 'dev.sqlite',
           synchronize: !isProd,
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          entities: appEntities,
           migrations: [__dirname + '/migrations/[0-9]*-*{.ts,.js}'],
         };
       },
     }),
-    TypeOrmModule.forFeature([
-      User,
-      MealProvider,
-      MealPlan,
-      Subscription,
-      Payment,
-      PaymentWebhookEvent,
-      Review,
-      WeeklyMenu,
-      PasswordResetToken,
-      ProviderEarning,
-      ProviderSettlementAudit,
-      SupportTicket,
-      MealUsage,
-      MealUsageAudit,
-      MealRecovery,
-      SystemSetting,
-      SystemSettingAudit,
-      DataImport,
-    ]),
+    TypeOrmModule.forFeature(appEntities),
     AuthModule,
     UsersModule,
     ProvidersModule,
