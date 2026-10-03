@@ -37,6 +37,8 @@ async function bootstrap() {
     'http://127.0.0.1:5173',
     'http://localhost:5174',
     'http://127.0.0.1:5174',
+    'https://prime-plate-qa.vercel.app',
+    'https://primeplate-qa.vercel.app',
   ];
 
   const allowedOrigins: string[] = [...defaultOrigins];
@@ -60,7 +62,11 @@ async function bootstrap() {
       // Allow requests with no origin (e.g. server-to-server, mobile apps, Postman)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('vercel.app')
+      ) {
         return callback(null, true);
       }
 
