@@ -15,7 +15,8 @@ if (!token || token === '<YOUR_API_TOKEN>' || token.includes('PLACEHOLDER')) {
 
 const client = new MailtrapClient({ token });
 
-const recipientEmail = process.argv[2] || 'itharajunikhil61@gmail.com';
+const recipientEmail =
+  process.argv[2] || process.env.SUPPORT_EMAIL || 'qa-test@primeplate.local';
 
 console.log(`🚀 Sending test email to ${recipientEmail} via Mailtrap...`);
 

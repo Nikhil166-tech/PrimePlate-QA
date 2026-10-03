@@ -446,7 +446,7 @@ ${ticketData.description}`;
             const ownerEmailMatch = errBody.match(/\(([^)]+)\)/);
             const ownerEmail = ownerEmailMatch
               ? ownerEmailMatch[1]
-              : 'itharajunikhil61@gmail.com';
+              : supportEmail;
             this.logger.warn(
               `Resend sandbox mode detected. Retrying delivery to registered owner (${ownerEmail})...`,
             );
