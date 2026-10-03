@@ -20,7 +20,12 @@
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
-    "seed": "ENABLE_SEED=true ts-node src/seed.ts"
+    "seed": "ENABLE_SEED=true ts-node src/seed.ts",
+    "qa:seed": "ts-node src/qa-seed/cli/seed-runner.ts",
+    "qa:reset": "ts-node src/qa-seed/cli/reset-runner.ts",
+    "qa:reseed": "npm run qa:reset && npm run qa:seed",
+    "qa:validate": "ts-node src/qa-seed/cli/validate-runner.ts",
+    "test:mailtrap": "node test-mailtrap.js"
   },
   "dependencies": {
     "@nestjs/common": "11.2.5",
@@ -31,8 +36,10 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.6",
     "@nestjs/typeorm": "^11.0.3",
+    "@types/adm-zip": "^0.5.8",
     "@types/bcrypt": "^6.0.0",
     "@types/nodemailer": "^8.0.1",
+    "adm-zip": "^0.6.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",
@@ -42,6 +49,7 @@
     "cors": "^2.8.6",
     "express-rate-limit": "^8.6.2",
     "helmet": "^8.3.0",
+    "mailtrap": "^4.10.0",
     "nodemailer": "^9.1.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

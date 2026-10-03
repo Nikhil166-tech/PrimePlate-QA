@@ -31,9 +31,8 @@ async function bootstrap() {
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
   }
 
-  // Allowed Origins for Production and Local Development
+  // Allowed Origins for QA and Local Development
   const defaultOrigins = [
-    'https://prime-plate-chi.vercel.app',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:5174',

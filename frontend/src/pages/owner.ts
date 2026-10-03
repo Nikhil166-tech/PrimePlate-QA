@@ -1236,8 +1236,8 @@ export async function renderOwnerPortal() {
 
               <!-- Standee Footer Divider & Website Link -->
               <div style="width: 100%; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 4px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                <a href="https://prime-plate-chi.vercel.app" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #ea580c; text-decoration: none; padding: 4px 10px; background: #fff7ed; border-radius: 8px; border: 1px solid #ffedd5;">
-                  <span>🌐 https://prime-plate-chi.vercel.app</span>
+                <a href="${window.location.origin}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #ea580c; text-decoration: none; padding: 4px 10px; background: #fff7ed; border-radius: 8px; border: 1px solid #ffedd5;">
+                  <span>🌐 ${window.location.origin}</span>
                 </a>
                 <span style="font-size: 11px; color: #64748b; font-weight: 500;">
                   Your Food. Your Time. Your PrimePlate.
@@ -2687,7 +2687,7 @@ export async function renderOwnerPortal() {
                   Official Mess Counter Standee • One check-in per student per calendar day
                 </div>
                 <div class="website-link">
-                  🌐 https://prime-plate-chi.vercel.app
+                  🌐 ${window.location.origin}
                 </div>
                 <div class="tagline">
                   Your Food. Your Time. Your PrimePlate.
@@ -2851,7 +2851,7 @@ export async function renderOwnerPortal() {
             // Website Link with Icon
             ctx.fillStyle = '#ea580c';
             ctx.font = 'bold 20px "Inter", "Sora", sans-serif';
-            ctx.fillText('🌐 https://prime-plate-chi.vercel.app', width / 2, 920);
+            ctx.fillText('🌐 ' + window.location.origin, width / 2, 920);
 
             // Tagline
             ctx.fillStyle = '#64748b';

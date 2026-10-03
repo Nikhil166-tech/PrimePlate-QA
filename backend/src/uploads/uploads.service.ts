@@ -42,7 +42,9 @@ export class UploadsService {
       apiKey &&
       apiSecret &&
       cloudName !== 'your_cloudinary_cloud_name' &&
-      apiKey !== 'your_cloudinary_api_key';
+      !cloudName.includes('PLACEHOLDER') &&
+      apiKey !== 'your_cloudinary_api_key' &&
+      !apiKey.includes('PLACEHOLDER');
 
     if (!isCloudinaryConfigured) {
       if (isProduction) {
@@ -58,9 +60,12 @@ export class UploadsService {
       };
     }
 
+    const targetFolder =
+      this.config.get<string>('CLOUDINARY_FOLDER') || folder;
+
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder },
+        { folder: targetFolder },
         (error, result) => {
           if (error)
             reject(

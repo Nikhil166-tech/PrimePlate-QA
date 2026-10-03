@@ -2,12 +2,66 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { promises as dnsPromises } from 'dns';
+import { MailtrapClient } from 'mailtrap';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
   constructor(private readonly configService: ConfigService) {}
+
+  private async sendViaMailtrap(params: {
+    toEmail: string;
+    subject: string;
+    htmlContent?: string;
+    textContent?: string;
+    category?: string;
+  }): Promise<boolean> {
+    const token = this.configService.get<string>('MAILTRAP_TOKEN');
+    if (
+      !token ||
+      token.includes('PLACEHOLDER') ||
+      token === '<YOUR_API_TOKEN>'
+    ) {
+      return false;
+    }
+
+    const senderEmail =
+      this.configService.get<string>('MAILTRAP_SENDER_EMAIL') ||
+      'hello@demomailtrap.co';
+    const senderName =
+      this.configService.get<string>('MAILTRAP_SENDER_NAME') ||
+      'Mailtrap Test';
+
+    try {
+      const client = new MailtrapClient({ token });
+      const recipients = [{ email: params.toEmail }];
+
+      const sendOptions: any = {
+        from: { email: senderEmail, name: senderName },
+        to: recipients,
+        subject: params.subject,
+        text: params.textContent || '',
+        category: params.category || 'QA Notification',
+      };
+
+      if (params.htmlContent) {
+        sendOptions.html = params.htmlContent;
+      }
+
+      const response = await client.send(sendOptions);
+
+      this.logger.log(
+        `Email dispatched to ${params.toEmail} via Mailtrap Sending API (message_ids: ${JSON.stringify((response as any)?.message_ids)}). Check logs at https://mailtrap.io/sending/email_logs`,
+      );
+      return true;
+    } catch (err: any) {
+      this.logger.error(
+        `Mailtrap Sending API delivery failed: ${err.message || err}`,
+      );
+      return false;
+    }
+  }
 
   private async getGmailTransporter() {
     const smtpUser =
@@ -157,7 +211,17 @@ If you did not request this, you can ignore this email.`;
       </div>
     `;
 
-    // 1. Primary for Cloud Environments: Brevo HTTP REST API (Port 443 HTTPS - Never blocked by Render)
+    // 1. Primary for QA / Mailtrap Sending API
+    const mailtrapSent = await this.sendViaMailtrap({
+      toEmail,
+      subject,
+      htmlContent,
+      textContent,
+      category: 'Password Reset',
+    });
+    if (mailtrapSent) return;
+
+    // 2. Primary for Cloud Environments: Brevo HTTP REST API (Port 443 HTTPS - Never blocked by Render)
     const brevoSent = await this.sendViaBrevo({
       toEmail,
       subject,
@@ -300,7 +364,17 @@ ${ticketData.description}`;
       </div>
     `;
 
-    // 1. Primary for Cloud Environments: Brevo HTTP REST API (Port 443 HTTPS - Never blocked by Render)
+    // 1. Primary for QA / Mailtrap Sending API
+    const mailtrapSent = await this.sendViaMailtrap({
+      toEmail: supportEmail,
+      subject,
+      htmlContent,
+      textContent,
+      category: 'Support Ticket',
+    });
+    if (mailtrapSent) return;
+
+    // 2. Primary for Cloud Environments: Brevo HTTP REST API (Port 443 HTTPS - Never blocked by Render)
     const brevoSent = await this.sendViaBrevo({
       toEmail: supportEmail,
       subject,
@@ -417,9 +491,58 @@ ${ticketData.description}`;
       }
     }
 
-    // 3. Fallback log
+    // 4. Fallback log
     this.logger.log(
       `[EmailService] Support ticket email #${ticketData.ticketNumber} logged for ${supportEmail}: ${subject}`,
     );
+  }
+
+  /**
+   * Generic email dispatcher using Mailtrap Sending API with fallback to Brevo/Gmail
+   */
+  async sendEmail(options: {
+    toEmail: string;
+    subject: string;
+    textContent: string;
+    htmlContent?: string;
+    category?: string;
+  }): Promise<boolean> {
+    const mailtrapSent = await this.sendViaMailtrap({
+      toEmail: options.toEmail,
+      subject: options.subject,
+      textContent: options.textContent,
+      htmlContent: options.htmlContent,
+      category: options.category || 'General',
+    });
+    if (mailtrapSent) return true;
+
+    const brevoSent = await this.sendViaBrevo({
+      toEmail: options.toEmail,
+      subject: options.subject,
+      htmlContent: options.htmlContent || `<p>${options.textContent}</p>`,
+      textContent: options.textContent,
+    });
+    if (brevoSent) return true;
+
+    const gmail = await this.getGmailTransporter();
+    if (gmail) {
+      try {
+        await gmail.transporter.sendMail({
+          from: `"PrimePlate" <${gmail.smtpUser}>`,
+          to: options.toEmail,
+          subject: options.subject,
+          text: options.textContent,
+          html: options.htmlContent || `<p>${options.textContent}</p>`,
+        });
+        return true;
+      } catch (err: any) {
+        this.logger.error(`SMTP delivery failed: ${err.message}`);
+      }
+    }
+
+    this.logger.log(
+      `[EmailService] Generic email simulated to ${options.toEmail}: ${options.subject}`,
+    );
+    return false;
   }
 }

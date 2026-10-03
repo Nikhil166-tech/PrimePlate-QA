@@ -7,7 +7,7 @@ const dbUrl = process.env.DATABASE_URL;
 const useSsl = process.env.DATABASE_SSL === 'true';
 
 export const AppDataSource = new DataSource(
-  dbUrl
+  dbUrl && !dbUrl.includes('PLACEHOLDER')
     ? {
         type: 'postgres',
         url: dbUrl,

@@ -56,6 +56,9 @@ export function renderNavbar(): string {
           </a>
           <a href="/admin/earnings" class="nav-item-btn ${currentPath.startsWith('/admin/earnings') ? 'active' : ''}">
             <i class="fa-solid fa-wallet"></i> Provider Earnings
+          </a>
+          <a href="/admin/data-import" class="nav-item-btn ${currentPath === '/admin/data-import' ? 'active' : ''}">
+            <i class="fa-solid fa-file-import"></i> Data Import
           </a>`
       : ''
     }

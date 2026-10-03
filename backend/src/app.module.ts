@@ -34,6 +34,9 @@ import { MealRecoveryModule } from './meal-recovery/meal-recovery.module';
 import { SystemSetting } from './settings/system-setting.entity';
 import { SystemSettingAudit } from './settings/system-setting-audit.entity';
 import { SettingsModule } from './settings/settings.module';
+import { DataImport } from './data-import/data-import.entity';
+import { DataImportModule } from './data-import/data-import.module';
+import { QaSeedModule } from './qa-seed/qa-seed.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -46,22 +49,26 @@ import { AppController } from './app.controller';
         const isProd = config.get<string>('NODE_ENV') === 'production';
         const dbUrl = config.get<string>('DATABASE_URL');
 
-        if (isProd && !dbUrl) {
+        if (isProd && (!dbUrl || dbUrl.includes('PLACEHOLDER'))) {
           throw new Error(
-            'FATAL: DATABASE_URL must be provided for PostgreSQL in production environment!',
+            'FATAL: A valid DATABASE_URL must be provided for PostgreSQL in production/QA environment!',
           );
         }
 
-        if (dbUrl) {
+        if (dbUrl && !dbUrl.includes('PLACEHOLDER')) {
           const useSsl = config.get<string>('DATABASE_SSL') === 'true';
+          const sanitizedUrl = dbUrl.replace(/[?&]sslmode=require/, '');
           return {
             type: 'postgres',
-            url: dbUrl,
+            url: sanitizedUrl,
             synchronize: false, // Strictly disabled in production
             migrationsRun: true, // Automatically execute pending migrations on startup
             entities: [__dirname + '/**/*.entity{.ts,.js}'],
             migrations: [__dirname + '/migrations/[0-9]*-*{.ts,.js}'],
             ssl: useSsl ? { rejectUnauthorized: false } : false,
+            extra: {
+              ssl: useSsl ? { rejectUnauthorized: false } : false,
+            },
           };
         }
 
@@ -93,6 +100,7 @@ import { AppController } from './app.controller';
       MealRecovery,
       SystemSetting,
       SystemSettingAudit,
+      DataImport,
     ]),
     AuthModule,
     UsersModule,
@@ -109,6 +117,8 @@ import { AppController } from './app.controller';
     MealUsageModule,
     MealRecoveryModule,
     SettingsModule,
+    DataImportModule,
+    QaSeedModule,
   ],
   controllers: [AppController],
   providers: [SeedService],

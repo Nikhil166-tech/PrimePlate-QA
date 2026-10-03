@@ -267,6 +267,140 @@ export const updateAdminFeeSettings = (data: {
   label?: string;
 }) => api.put('/settings/fees', data);
 
+// Production Data Import APIs
+export interface ValidationTableSummary {
+  name: string;
+  file: string;
+  declaredCount: number;
+  parsedCount: number;
+  validCount: number;
+  invalidCount: number;
+  errors: string[];
+}
+
+export interface ForbiddenFieldSummary {
+  table: string;
+  field: string;
+  count: number;
+}
+
+export interface ValidationReport {
+  valid: boolean;
+  packageToken: string;
+  exportId: string;
+  source: string;
+  formatVersion: string;
+  exportedAt: string;
+  tableSummaries: ValidationTableSummary[];
+  foreignKeyCheck: {
+    status: 'PASS' | 'FAIL';
+    errors: string[];
+  };
+  forbiddenFieldsFound: ForbiddenFieldSummary[];
+  warnings: string[];
+  errors: string[];
+}
+
+export interface PreviewReport {
+  packageToken: string;
+  exportId: string;
+  source: string;
+  exportedAt: string;
+  mode: 'REPLACE' | 'MERGE';
+  estimatedCounts: {
+    users: number;
+    providers: number;
+    mealPlans: number;
+    subscriptions: number;
+    mealUsages: number;
+    reviews: number;
+    providerEarnings: number;
+    total: number;
+  };
+  sampleSanitizedRecords: {
+    users?: Array<{ email: string; name: string; role: string }>;
+    providers?: Array<{ name: string; city?: string; monthlyPrice?: number }>;
+  };
+  forbiddenFieldsExcluded: ForbiddenFieldSummary[];
+  warnings: string[];
+  requiredConfirmationPhrase: string;
+}
+
+export interface ExecutionReport {
+  importId: string;
+  exportId: string;
+  source: string;
+  mode: 'REPLACE' | 'MERGE';
+  status: string;
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
+  recordCounts: Record<string, number>;
+  sanitizedCount: number;
+  insertedCount: number;
+  updatedCount: number;
+  skippedCount: number;
+  conflictCount: number;
+  forbiddenFieldsCount: number;
+  forbiddenFieldsExcluded: ForbiddenFieldSummary[];
+  warningCount: number;
+  warnings: string[];
+  errorSummary?: string | null;
+}
+
+export interface ImportHistoryItem {
+  id: string;
+  importId: string;
+  exportId: string;
+  source: string;
+  mode: 'REPLACE' | 'MERGE';
+  status: string;
+  initiatedBy: string;
+  recordCountsJson?: string;
+  sanitizedCount: number;
+  insertedCount: number;
+  updatedCount: number;
+  skippedCount: number;
+  conflictCount: number;
+  forbiddenFieldsCount: number;
+  warningCount: number;
+  errorSummary?: string;
+  startedAt: string;
+  completedAt?: string;
+}
+
+export const validateImportPackage = (
+  formData: FormData,
+  onUploadProgress?: (progressEvent: any) => void,
+): Promise<ValidationReport> =>
+  api.post('/admin/data-import/validate', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress,
+  });
+
+export const previewDataImport = (data: {
+  packageToken: string;
+  mode: 'REPLACE' | 'MERGE';
+}): Promise<PreviewReport> =>
+  api.post('/admin/data-import/preview', data);
+
+export const executeDataImport = (data: {
+  packageToken: string;
+  mode: 'REPLACE' | 'MERGE';
+  confirmationPhrase: string;
+}): Promise<ExecutionReport> =>
+  api.post('/admin/data-import/execute', data);
+
+export const getDataImportProgress = (token: string): Promise<{ stage: string; percent: number; details?: string }> =>
+  api.get(`/admin/data-import/progress/${encodeURIComponent(token)}`);
+
+export const getDataImportHistory = (params?: { limit?: number; offset?: number }): Promise<{ items: ImportHistoryItem[]; total: number }> =>
+  api.get(`/admin/data-import?limit=${params?.limit || 20}&offset=${params?.offset || 0}`);
+
+export const getDataImportById = (id: string): Promise<ImportHistoryItem> =>
+  api.get(`/admin/data-import/${encodeURIComponent(id)}`);
+
 export default api;
+
 
 

@@ -113,7 +113,7 @@ describe('Meal Check-in Uniqueness Model — (subscriptionId, mealDate)', () => 
       },
       status: SubscriptionStatus.ACTIVE,
       startDate: '2026-08-01',
-      endDate: '2026-10-01',
+      endDate: '2026-12-31',
     };
 
     const mockSubB = {
@@ -126,7 +126,7 @@ describe('Meal Check-in Uniqueness Model — (subscriptionId, mealDate)', () => 
       },
       status: SubscriptionStatus.ACTIVE,
       startDate: '2026-08-01',
-      endDate: '2026-10-01',
+      endDate: '2026-12-31',
     };
 
     it('1. Same subscription + same day + second check-in → REJECTED with ALREADY_CHECKED_IN', async () => {

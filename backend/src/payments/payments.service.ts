@@ -623,11 +623,35 @@ export class PaymentsService {
           provider.monthlyPrice ??
           0,
       );
-      const authoritativeAmount = calculateAuthoritativeAmount(
+      const mealAmount = calculateAuthoritativeAmount(
         baseMonthlyPrice,
         durationDays,
         mealPlan.customOneDayPrice,
       );
+
+      // Determine platform fee snapshot from preOrder or settings
+      let platformFee = 0;
+      let platformFeeType: string | null = null;
+      let platformFeeLabel: string | null = null;
+
+      if (
+        preOrder &&
+        preOrder.platformFee !== undefined &&
+        preOrder.platformFee !== null
+      ) {
+        platformFee = Number(preOrder.platformFee);
+        platformFeeType = preOrder.platformFeeType || null;
+        platformFeeLabel = preOrder.platformFeeLabel || null;
+      } else if (this.settingsService) {
+        const feeConfig = await this.settingsService.getFeeSettings();
+        if (feeConfig && feeConfig.enabled && feeConfig.amount > 0) {
+          platformFee = Number(feeConfig.amount);
+          platformFeeType = feeConfig.type;
+          platformFeeLabel = feeConfig.label;
+        }
+      }
+
+      const authoritativeAmount = mealAmount + platformFee;
 
       // Amount Integrity Validation
       if (paymentAmountInPaise !== undefined && paymentAmountInPaise > 0) {
@@ -656,6 +680,9 @@ export class PaymentsService {
         existingPayment.razorpayPaymentId = razorpayPaymentId;
         existingPayment.razorpaySignature = razorpaySignature;
         existingPayment.amount = authoritativeAmount;
+        existingPayment.totalAmount = authoritativeAmount;
+        existingPayment.mealAmount = mealAmount;
+        existingPayment.platformFee = platformFee;
         existingPayment.durationDays = durationDays;
         existingPayment.mealPlanId = targetPlanId;
         paymentToSave = existingPayment;
@@ -664,6 +691,11 @@ export class PaymentsService {
           student,
           provider,
           amount: authoritativeAmount,
+          totalAmount: authoritativeAmount,
+          mealAmount,
+          platformFee,
+          platformFeeType,
+          platformFeeLabel,
           razorpayOrderId,
           razorpayPaymentId,
           razorpaySignature,
@@ -777,8 +809,10 @@ export class PaymentsService {
 
       // 6. Create and save Provider Earning record atomically
       const grossAmount = Number(savedPayment.amount);
-      const platformFee = 0;
-      const providerAmount = grossAmount - platformFee;
+      const earnedPlatformFee = Number(savedPayment.platformFee || 0);
+      const providerAmount = Number(
+        savedPayment.mealAmount || grossAmount - earnedPlatformFee,
+      );
 
       if (!earning) {
         earning = manager.create(ProviderEarning, {
@@ -787,7 +821,7 @@ export class PaymentsService {
           providerId: provider.id,
           studentId: student.id,
           grossAmount,
-          platformFee,
+          platformFee: earnedPlatformFee,
           providerAmount,
           status: ProviderEarningStatus.PENDING,
           earnedAt: new Date(),

@@ -53,6 +53,11 @@ export class SeedService implements OnApplicationBootstrap {
       // Ignore if table or columns not yet ready
     }
 
+    // Production & Default Safety Guard: Disable mock seeding in production or when ENABLE_SEED is not explicitly 'true'
+    if (isProduction || !isSeedEnabled) {
+      return;
+    }
+
     try {
       await this.seedAdmin();
     } catch (err: any) {
@@ -60,14 +65,6 @@ export class SeedService implements OnApplicationBootstrap {
         'Error initializing admin account:',
         err.message || err,
       );
-    }
-
-    // Production & Default Safety Guard: Disable mock seeding in production or when ENABLE_SEED is not explicitly 'true'
-    if (isProduction || !isSeedEnabled) {
-      this.logger.log(
-        'Production seed disabled. No mock business data created.',
-      );
-      return;
     }
 
     this.logger.log(
