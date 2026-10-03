@@ -36,18 +36,24 @@ import { SystemSettingAudit } from './settings/system-setting-audit.entity';
 import { SettingsModule } from './settings/settings.module';
 import { DataImport } from './data-import/data-import.entity';
 import { DataImportModule } from './data-import/data-import.module';
+import { DailyMenu } from './meal-plans/daily-menu.entity';
+import { ProviderImage } from './providers/provider-image.entity';
+import { RefreshToken } from './auth/refresh-token.entity';
 import { QaSeedModule } from './qa-seed/qa-seed.module';
 import { AppController } from './app.controller';
 
 export const appEntities = [
   User,
   MealProvider,
+  ProviderImage,
   MealPlan,
+  DailyMenu,
   Subscription,
   Payment,
   PaymentWebhookEvent,
   Review,
   WeeklyMenu,
+  RefreshToken,
   PasswordResetToken,
   ProviderEarning,
   ProviderSettlementAudit,
