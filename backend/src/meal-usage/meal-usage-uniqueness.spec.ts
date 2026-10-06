@@ -93,12 +93,16 @@ describe('Meal Check-in Uniqueness Model — (subscriptionId, mealDate)', () => 
 
     const mockProviderA = {
       id: providerAId,
+      userId: providerAId,
+      user: { id: providerAId },
       name: 'Provider A (Lunch)',
       qrToken: qrTokenA,
     };
 
     const mockProviderB = {
       id: providerBId,
+      userId: providerBId,
+      user: { id: providerBId },
       name: 'Provider B (Dinner)',
       qrToken: qrTokenB,
     };
@@ -180,6 +184,144 @@ describe('Meal Check-in Uniqueness Model — (subscriptionId, mealDate)', () => 
       expect(res.status).toBe(MealUsageStatus.USED);
       expect(res.providerName).toBe('Provider B (Dinner)');
       expect(usageRepo.save).toHaveBeenCalled();
+    });
+
+    it('4. Same student + SAME provider + multiple active subscriptions (Lunch + Dinner) maintains strict subscription isolation', async () => {
+      // Both subscriptions belong to Provider A
+      const mockSubA1 = {
+        id: 'sub-lunch-prov-a',
+        student: { id: studentId, name: 'Student Multi', email: 'multi@student.test' },
+        mealPlan: {
+          id: 'plan-lunch-a',
+          provider: mockProviderA,
+          title: 'Lunch Only Saver Plan',
+        },
+        status: SubscriptionStatus.ACTIVE,
+        startDate: '2026-10-01',
+        endDate: '2026-10-31',
+      };
+
+      const mockSubA2 = {
+        id: 'sub-dinner-prov-a',
+        student: { id: studentId, name: 'Student Multi', email: 'multi@student.test' },
+        mealPlan: {
+          id: 'plan-dinner-a',
+          provider: mockProviderA,
+          title: 'Dinner Only Campus Box',
+        },
+        status: SubscriptionStatus.ACTIVE,
+        startDate: '2026-10-01',
+        endDate: '2026-10-31',
+      };
+
+      providerRepo.findOne.mockResolvedValue(mockProviderA);
+      subRepo.find.mockResolvedValue([mockSubA1, mockSubA2]);
+
+      // 4a. Initial check-in for Subscription A1
+      usageRepo.find.mockImplementation((opts: any) => {
+        // When checking for existing check-ins today across active provider subscriptions
+        if (opts?.where?.subscriptionId?._value || Array.isArray(opts?.where?.subscriptionId)) {
+          return Promise.resolve([]);
+        }
+        return Promise.resolve([]);
+      });
+      usageRepo.findOne.mockResolvedValue(null);
+
+      const checkIn1 = await service.checkIn(studentId, qrTokenA, mockSubA1.id);
+      expect(checkIn1.code).toBe('CHECKED_IN');
+      expect(usageRepo.save).toHaveBeenCalled();
+
+      // 4b. Provider today attendance view: Sub A1 is checked in, Sub A2 is NOT checked in
+      const recordedUsageSubA1 = {
+        id: 'usage-sub-a1-today',
+        studentId,
+        subscriptionId: mockSubA1.id,
+        providerId: providerAId,
+        mealDate: todayIst,
+        status: MealUsageStatus.USED,
+        scannedAt: new Date(),
+      };
+
+      usageRepo.find.mockImplementation((opts: any) => {
+        if (opts?.where?.providerId === providerAId && opts?.where?.mealDate === todayIst) {
+          return Promise.resolve([recordedUsageSubA1]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const todayAttendance = await service.getProviderTodayCheckIns(providerAId, providerAId);
+      expect(todayAttendance.summary.activeSubscribers).toBe(2);
+      expect(todayAttendance.summary.todayCheckIns).toBe(1);
+      expect(todayAttendance.summary.notCheckedIn).toBe(1);
+
+      const sub1Item = todayAttendance.subscribers.find((s: any) => s.subscriptionId === mockSubA1.id);
+      const sub2Item = todayAttendance.subscribers.find((s: any) => s.subscriptionId === mockSubA2.id);
+      expect(sub1Item.checkedIn).toBe(true);
+      expect(sub1Item.status).toBe('CHECKED_IN');
+      expect(sub2Item.checkedIn).toBe(false);
+      expect(sub2Item.status).toBe('NOT_CHECKED_IN');
+
+      // 4c. Provider subscriber attendance history for Sub A2 must NOT contain Sub A1's check-in
+      subRepo.findOne.mockImplementation((opts: any) => {
+        if (opts?.where?.id === mockSubA2.id) return Promise.resolve(mockSubA2);
+        if (opts?.where?.id === mockSubA1.id) return Promise.resolve(mockSubA1);
+        return Promise.resolve(null);
+      });
+
+      usageRepo.find.mockImplementation((opts: any) => {
+        if (opts?.where?.subscriptionId === mockSubA2.id) {
+          return Promise.resolve([]); // Sub A2 has no usages
+        }
+        if (opts?.where?.subscriptionId === mockSubA1.id) {
+          return Promise.resolve([recordedUsageSubA1]);
+        }
+        return Promise.resolve([]);
+      });
+
+      const sub2History = await service.getProviderSubscriberAttendanceHistory(
+        providerAId,
+        mockSubA2.id,
+        providerAId,
+      );
+      const sub2TodayDay = sub2History.days.find((d: any) => d.date === todayIst);
+      expect(sub2TodayDay.checkedIn).toBe(false);
+      expect(sub2TodayDay.status).toBe('NOT_CHECKED_IN');
+      expect(sub2History.attendedDays).toBe(0);
+
+      // Provider subscriber attendance history for Sub A1 DOES show Sub A1's check-in
+      const sub1History = await service.getProviderSubscriberAttendanceHistory(
+        providerAId,
+        mockSubA1.id,
+        providerAId,
+      );
+      const sub1TodayDay = sub1History.days.find((d: any) => d.date === todayIst);
+      expect(sub1TodayDay.checkedIn).toBe(true);
+      expect(sub1TodayDay.status).toBe('CHECKED_IN');
+      expect(sub1History.attendedDays).toBe(1);
+
+      // 4d. Check in Subscription A2 afterward
+      usageRepo.findOne.mockResolvedValue(null);
+      const checkIn2 = await service.checkIn(studentId, qrTokenA, mockSubA2.id);
+      expect(checkIn2.code).toBe('CHECKED_IN');
+
+      // 4e. Repeating check-in for Sub A1 is idempotent
+      usageRepo.findOne.mockImplementation((opts: any) => {
+        if (opts?.where?.subscriptionId === mockSubA1.id && opts?.where?.mealDate === todayIst) {
+          return Promise.resolve(recordedUsageSubA1);
+        }
+        return Promise.resolve(null);
+      });
+      const checkInDuplicate = await service.checkIn(studentId, qrTokenA, mockSubA1.id);
+      expect(checkInDuplicate.code).toBe('ALREADY_CHECKED_IN');
+
+      // 4f. Student-facing history maintains subscription isolation
+      usageRepo.find.mockResolvedValue([recordedUsageSubA1]);
+      const studentHistory = await service.getStudentHistory(studentId);
+      const studentSub1 = studentHistory.find((s: any) => s.subscriptionId === mockSubA1.id);
+      const studentSub2 = studentHistory.find((s: any) => s.subscriptionId === mockSubA2.id);
+
+      expect(studentSub1.totalUsedCount).toBe(1);
+      expect(studentSub2.totalUsedCount).toBe(0);
     });
   });
 });

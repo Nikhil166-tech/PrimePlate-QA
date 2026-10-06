@@ -491,13 +491,15 @@ export class MealUsageService {
       relations: { student: true },
     });
 
-    const usageByStudentMap = new Map<string, MealUsage>();
+    const usageBySubscriptionMap = new Map<string, MealUsage>();
     usagesToday.forEach((u) => {
-      usageByStudentMap.set(u.studentId, u);
+      if (u.subscriptionId) {
+        usageBySubscriptionMap.set(u.subscriptionId, u);
+      }
     });
 
     const subscribers = validSubsToday.map((s) => {
-      const usage = usageByStudentMap.get(s.student?.id);
+      const usage = usageBySubscriptionMap.get(s.id);
       const isCheckedIn = Boolean(usage);
       const timeStr = usage
         ? this.formatIstTime(usage.scannedAt || usage.createdAt)
@@ -521,7 +523,7 @@ export class MealUsageService {
       };
     });
 
-    const todayCheckIns = usagesToday.length;
+    const todayCheckIns = subscribers.filter((s) => s.checkedIn).length;
     const activeSubscribers = validSubsToday.length;
     const notCheckedIn = Math.max(0, activeSubscribers - todayCheckIns);
 
@@ -590,21 +592,6 @@ export class MealUsageService {
 
     const usageMap = new Map<string, MealUsage>();
     usages.forEach((u) => usageMap.set(u.mealDate, u));
-
-    // Fallback: If usages were recorded with studentId & providerId during active timeframe
-    if (sub.student?.id) {
-      const studentUsages = await this.usageRepo.find({
-        where: {
-          studentId: sub.student.id,
-          providerId: provider.id,
-        },
-      });
-      studentUsages.forEach((u) => {
-        if (!usageMap.has(u.mealDate)) {
-          usageMap.set(u.mealDate, u);
-        }
-      });
-    }
 
     const startDateStr = sub.startDate || todayIst;
     let endDateStr = sub.endDate;

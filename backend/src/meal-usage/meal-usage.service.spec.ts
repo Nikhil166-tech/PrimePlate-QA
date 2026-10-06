@@ -404,6 +404,7 @@ describe('MealUsageService — Provider QR + Daily Meal Check-in System', () => 
         {
           id: 'u-1',
           studentId: studentAId,
+          subscriptionId: 'sub-1',
           mealDate: todayIst,
           scannedAt: new Date(),
         },
