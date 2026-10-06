@@ -1618,12 +1618,16 @@ export class PaymentsService {
     // Construct clean 3-step timeline: Payment Initiated -> Payment Status -> Mess Card Activated (if success)
     const timeline: any[] = [];
 
+    const initiatedTime = payment.createdAt;
+    const statusUpdatedTime = (payment as any).updatedAt || sub?.createdAt || payment.createdAt;
+    const messCardActivatedTime = sub?.createdAt || sub?.startDate || payment.createdAt;
+
     // Step 1: Payment Initiated
     timeline.push({
       event: 'PAYMENT_INITIATED',
       title: 'Payment Initiated',
       description: `Payment order initiated for ₹${Number(payment.amount).toLocaleString('en-IN')}`,
-      timestamp: payment.createdAt,
+      timestamp: initiatedTime,
       status: 'COMPLETED',
     });
 
@@ -1633,7 +1637,7 @@ export class PaymentsService {
         event: 'PAYMENT_SUCCESS',
         title: 'Payment Successful',
         description: `Payment of ₹${Number(payment.amount).toLocaleString('en-IN')} verified & confirmed`,
-        timestamp: payment.createdAt,
+        timestamp: statusUpdatedTime,
         status: 'COMPLETED',
       });
     } else if (statusLower === 'failed') {
@@ -1641,7 +1645,7 @@ export class PaymentsService {
         event: 'PAYMENT_FAILED',
         title: 'Payment Failed',
         description: 'Payment attempt was failed or cancelled',
-        timestamp: payment.createdAt,
+        timestamp: statusUpdatedTime,
         status: 'FAILED',
       });
     } else if (statusLower === 'refunded') {
@@ -1649,7 +1653,7 @@ export class PaymentsService {
         event: 'PAYMENT_REFUNDED',
         title: 'Payment Refunded',
         description: 'Payment amount has been refunded',
-        timestamp: payment.createdAt,
+        timestamp: statusUpdatedTime,
         status: 'REFUNDED',
       });
     } else {
@@ -1657,7 +1661,7 @@ export class PaymentsService {
         event: 'PAYMENT_PENDING',
         title: 'Payment Pending',
         description: 'Payment verification is in progress',
-        timestamp: payment.createdAt,
+        timestamp: statusUpdatedTime,
         status: 'PENDING',
       });
     }
@@ -1669,7 +1673,7 @@ export class PaymentsService {
         title: 'Mess Card Activated',
         description:
           'Digital QR Mess Card active & ready for daily meal scanning',
-        timestamp: payment.createdAt || sub.createdAt || new Date(),
+        timestamp: messCardActivatedTime,
         status: 'COMPLETED',
       });
     }

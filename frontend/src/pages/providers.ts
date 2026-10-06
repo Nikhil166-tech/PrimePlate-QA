@@ -117,8 +117,21 @@ export async function renderProviders() {
           </span>
         `;
 
-        const sellNum = Number(h.sellingPrice ?? h.monthlyPrice);
-        const origNum = Number(h.originalPrice ?? h.monthlyPrice ?? sellNum);
+        const mealPlansArr = Array.isArray(h.mealPlans) ? h.mealPlans.filter((p: any) => p.isActive !== false) : [];
+        const monthlyPlan = mealPlansArr.find((p: any) => p.mealType === 'FULL_DAY') || mealPlansArr[0];
+
+        const planTitle = monthlyPlan?.title || h.planName || 'Monthly Subscription Plan';
+
+        const monthlySellPrice = monthlyPlan
+          ? Number(monthlyPlan.sellingPrice ?? monthlyPlan.pricePerMonth ?? h.sellingPrice ?? h.monthlyPrice)
+          : Number(h.sellingPrice ?? h.monthlyPrice);
+
+        const monthlyOrigPrice = monthlyPlan
+          ? Number(monthlyPlan.originalPrice ?? monthlyPlan.pricePerMonth ?? monthlySellPrice)
+          : Number(h.originalPrice ?? h.monthlyPrice ?? monthlySellPrice);
+
+        const sellNum = monthlySellPrice;
+        const origNum = monthlyOrigPrice;
         const hasValidPrices = !isNaN(sellNum) && sellNum > 0;
         const hasDiscount = Boolean(
           hasValidPrices &&
@@ -132,10 +145,10 @@ export async function renderProviders() {
         const isDiscounted = hasDiscount && discountPct > 0;
         const saveAmt = isDiscounted ? Math.round(origNum - sellNum) : 0;
 
-        let unitText = '/mo';
-        if (h.durationDays === 1) unitText = '/day';
-        else if (h.durationDays === 7) unitText = '/7 days';
-        else if (h.durationDays === 15) unitText = '/15 days';
+        let unitText = '/ month';
+        if (h.durationDays === 1) unitText = '/ day';
+        else if (h.durationDays === 7) unitText = '/ 7 days';
+        else if (h.durationDays === 15) unitText = '/ 15 days';
 
         const ratingDisplay = (h.rating ?? 0) > 0 ? Number(h.rating).toFixed(1) : 'New';
 
@@ -162,36 +175,43 @@ export async function renderProviders() {
               ${statusBadge}
             </div>
             <p style="font-size: 14px; color: var(--color-neutral-600); margin-bottom: 12px; line-height: 1.4;">${escapeHtml(h.description || 'No description available.')}</p>
-            <div class="card-pricing-footer">
-              <div class="card-pricing-info">
-                ${
-                  hasValidPrices
-                    ? isDiscounted
-                      ? `
-                        <div class="card-original-row">
-                          <span class="card-original-price">₹${origNum.toLocaleString('en-IN')}</span>
-                          <span class="card-discount-badge">${discountPct}% OFF</span>
-                        </div>
-                        <div class="card-selling-row">
-                          <span class="card-selling-price">₹${sellNum.toLocaleString('en-IN')}</span>
-                          <span class="card-price-unit">${unitText}</span>
-                        </div>
-                        <div class="card-savings-text">Save ₹${saveAmt.toLocaleString('en-IN')}</div>
-                      `
-                      : `
-                        <div class="card-selling-row">
-                          <span class="card-selling-price">₹${sellNum.toLocaleString('en-IN')}</span>
-                          <span class="card-price-unit">${unitText}</span>
-                        </div>
-                      `
-                    : `
-                      <div class="card-selling-row">
-                        <span class="card-price-unit" style="font-size: 14px; color: var(--color-neutral-500);">Price Unavailable</span>
+            <div class="card-pricing-footer" style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--color-neutral-100); padding-top: 12px; margin-top: auto; gap: 8px;">
+              <div class="card-pricing-info" style="display: flex; flex-direction: column; gap: 2px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--color-neutral-800);">
+                  ${escapeHtml(planTitle)}
+                </div>
+                ${hasValidPrices
+            ? `
+                    <div style="display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap;">
+                      <strong class="card-selling-price" style="font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--color-primary-600);">
+                        ₹${sellNum.toLocaleString('en-IN')}
+                      </strong>
+                      <span class="card-price-unit" style="font-size: 13px; font-weight: 600; color: var(--color-neutral-600);">
+                        ${unitText}
+                      </span>
+                      ${isDiscounted ? `
+                        <span class="card-original-price" style="font-size: 12px; color: var(--color-neutral-400); text-decoration: line-through; margin-left: 2px;">
+                          ₹${origNum.toLocaleString('en-IN')}
+                        </span>
+                        <span class="card-discount-badge" style="background: #dcfce7; color: #16a34a; font-size: 10.5px; font-weight: 800; padding: 1px 6px; border-radius: 999px;">
+                          ${discountPct}% OFF
+                        </span>
+                      ` : ''}
+                    </div>
+                    ${isDiscounted ? `
+                      <div class="card-savings-text" style="font-size: 11px; font-weight: 700; color: #059669; margin-top: 1px;">
+                        Save ₹${saveAmt.toLocaleString('en-IN')} ${unitText}
                       </div>
-                    `
-                }
+                    ` : ''}
+                  `
+            : `
+                    <div class="card-selling-row">
+                      <span class="card-price-unit" style="font-size: 13px; color: var(--color-neutral-500); font-weight: 600;">Pricing upon request</span>
+                    </div>
+                  `
+          }
               </div>
-              <button class="btn-primary-action card-action-btn">
+              <button class="btn-primary-action card-action-btn" style="padding: 9px 15px; font-size: 12.5px; font-weight: 700; border-radius: 10px; white-space: nowrap; flex-shrink: 0;">
                 View Details <i class="fa-solid fa-arrow-right"></i>
               </button>
             </div>

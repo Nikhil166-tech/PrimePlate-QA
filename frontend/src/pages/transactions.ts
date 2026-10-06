@@ -118,20 +118,59 @@ function escapeHtml(str: any): string {
     .replace(/'/g, '&#039;');
 }
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return 'N/A';
+export function formatDateTime(dateVal: any, includeSeconds: boolean = false): string {
+  if (!dateVal) return 'N/A';
   try {
-    const d = new Date(dateStr);
-    return d.toLocaleString('en-IN', {
-      day: 'numeric',
+    const d = typeof dateVal === 'string' || typeof dateVal === 'number' ? new Date(dateVal) : dateVal;
+    if (!(d instanceof Date) || isNaN(d.getTime())) return 'N/A';
+
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      ...(includeSeconds ? { second: '2-digit' } : {}),
       hour12: true,
-    });
+    }).format(d);
   } catch (_) {
-    return dateStr;
+    return 'N/A';
+  }
+}
+
+export function formatDateOnly(dateVal: any): string {
+  if (!dateVal) return 'N/A';
+  try {
+    const d = typeof dateVal === 'string' || typeof dateVal === 'number' ? new Date(dateVal) : dateVal;
+    if (!(d instanceof Date) || isNaN(d.getTime())) return 'N/A';
+
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(d);
+  } catch (_) {
+    return 'N/A';
+  }
+}
+
+export function formatTimeOnly(dateVal: any, includeSeconds: boolean = false): string {
+  if (!dateVal) return 'N/A';
+  try {
+    const d = typeof dateVal === 'string' || typeof dateVal === 'number' ? new Date(dateVal) : dateVal;
+    if (!(d instanceof Date) || isNaN(d.getTime())) return 'N/A';
+
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      ...(includeSeconds ? { second: '2-digit' } : {}),
+      hour12: true,
+    }).format(d);
+  } catch (_) {
+    return 'N/A';
   }
 }
 
@@ -167,17 +206,17 @@ export async function renderTransactions() {
 
   app.innerHTML = `
     ${renderNavbar()}
-    <main class="page-content" style="min-height: calc(100vh - 140px); background: #f8fafc; padding-bottom: 40px;">
-      <div class="container" style="max-width: 960px; margin: 0 auto; padding: 16px 12px;">
+    <main class="page-content" style="min-height: calc(100vh - 140px); background: #f8fafc; padding-top: 64px; padding-bottom: 60px;">
+      <div class="container" style="max-width: 960px; margin: 0 auto; padding: 0 12px;">
         
-        <!-- Mobile & Desktop Header -->
-        <div style="margin-bottom: 20px;">
-          <a href="/student/dashboard" style="font-size: 13px; font-weight: 700; color: var(--color-primary-600); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-            <i class="fa-solid fa-arrow-left"></i> Dashboard
-          </a>
-          <h1 class="font-display" style="font-size: 22px; font-weight: 800; color: var(--color-neutral-900); margin: 0; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-receipt" style="color: var(--color-primary-600);"></i> Transactions & Support
+        <!-- Sticky Header when scrolling -->
+        <div class="tx-sticky-header">
+          <h1 class="font-display" style="font-size: 22px; font-weight: 800; color: var(--color-neutral-900); margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-receipt" style="color: var(--color-primary-600);"></i> Transactions &amp; Support
           </h1>
+          <div id="txFilterBarPlaceholder">
+            <!-- Filter tabs rendered dynamically -->
+          </div>
         </div>
 
         <div id="transactionsMainContent">
@@ -235,9 +274,11 @@ async function fetchHistoryAndRender(initialOrderIdToOpen: string | null = null)
 
 function renderMainContent() {
   const container = document.getElementById('transactionsMainContent');
+  const filterBarContainer = document.getElementById('txFilterBarPlaceholder');
   if (!container) return;
 
   if (isLoading) {
+    if (filterBarContainer) filterBarContainer.innerHTML = '';
     container.innerHTML = `
       <div style="background: #fff; border-radius: 20px; padding: 48px 16px; text-align: center; border: 1px solid var(--color-neutral-200);">
         <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; color: var(--color-primary-600); margin-bottom: 12px;"></i>
@@ -248,6 +289,7 @@ function renderMainContent() {
   }
 
   if (errorMessage) {
+    if (filterBarContainer) filterBarContainer.innerHTML = '';
     container.innerHTML = `
       <div style="background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 20px; border-radius: 20px; text-align: center;">
         <i class="fa-solid fa-circle-exclamation" style="font-size: 26px; margin-bottom: 8px;"></i>
@@ -273,41 +315,43 @@ function renderMainContent() {
     return t.status === activeFilter;
   });
 
+  if (filterBarContainer) {
+    filterBarContainer.innerHTML = `
+      <div class="tx-scroll-hide" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch;">
+        <button class="filter-tab-btn ${activeFilter === 'ALL' ? 'active' : ''}" data-filter="ALL" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'ALL' ? 'var(--color-primary-600)' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'ALL' ? 'var(--color-primary-600)' : '#fff'}; color: ${activeFilter === 'ALL' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
+          All <span style="background: ${activeFilter === 'ALL' ? 'rgba(255,255,255,0.25)' : 'var(--color-neutral-100)'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${totalCount}</span>
+        </button>
+
+        <button class="filter-tab-btn ${activeFilter === 'SUCCESS' ? 'active' : ''}" data-filter="SUCCESS" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'SUCCESS' ? '#059669' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'SUCCESS' ? '#059669' : '#fff'}; color: ${activeFilter === 'SUCCESS' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
+          Successful <span style="background: ${activeFilter === 'SUCCESS' ? 'rgba(255,255,255,0.25)' : '#d1fae5'}; color: ${activeFilter === 'SUCCESS' ? '#fff' : '#047857'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${successCount}</span>
+        </button>
+
+        <button class="filter-tab-btn ${activeFilter === 'PENDING' ? 'active' : ''}" data-filter="PENDING" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'PENDING' ? '#d97706' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'PENDING' ? '#d97706' : '#fff'}; color: ${activeFilter === 'PENDING' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
+          Pending <span style="background: ${activeFilter === 'PENDING' ? 'rgba(255,255,255,0.25)' : '#fef3c7'}; color: ${activeFilter === 'PENDING' ? '#fff' : '#b45309'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${pendingCount}</span>
+        </button>
+
+        <button class="filter-tab-btn ${activeFilter === 'FAILED' ? 'active' : ''}" data-filter="FAILED" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'FAILED' ? '#dc2626' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'FAILED' ? '#dc2626' : '#fff'}; color: ${activeFilter === 'FAILED' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
+          Failed <span style="background: ${activeFilter === 'FAILED' ? 'rgba(255,255,255,0.25)' : '#fee2e2'}; color: ${activeFilter === 'FAILED' ? '#fff' : '#b91c1c'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${failedCount}</span>
+        </button>
+
+        <button class="filter-tab-btn ${activeFilter === 'REFUNDED' ? 'active' : ''}" data-filter="REFUNDED" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'REFUNDED' ? '#4b5563' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'REFUNDED' ? '#4b5563' : '#fff'}; color: ${activeFilter === 'REFUNDED' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
+          Refunded <span style="background: ${activeFilter === 'REFUNDED' ? 'rgba(255,255,255,0.25)' : '#e5e7eb'}; color: ${activeFilter === 'REFUNDED' ? '#fff' : '#374151'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${refundedCount}</span>
+        </button>
+      </div>
+    `;
+  }
+
   container.innerHTML = `
-    <!-- Scrollable Filter Chips -->
-    <div class="tx-scroll-hide" style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch;">
-      <button class="filter-tab-btn ${activeFilter === 'ALL' ? 'active' : ''}" data-filter="ALL" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'ALL' ? 'var(--color-primary-600)' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'ALL' ? 'var(--color-primary-600)' : '#fff'}; color: ${activeFilter === 'ALL' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
-        All <span style="background: ${activeFilter === 'ALL' ? 'rgba(255,255,255,0.25)' : 'var(--color-neutral-100)'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${totalCount}</span>
-      </button>
-
-      <button class="filter-tab-btn ${activeFilter === 'SUCCESS' ? 'active' : ''}" data-filter="SUCCESS" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'SUCCESS' ? '#059669' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'SUCCESS' ? '#059669' : '#fff'}; color: ${activeFilter === 'SUCCESS' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
-        Successful <span style="background: ${activeFilter === 'SUCCESS' ? 'rgba(255,255,255,0.25)' : '#d1fae5'}; color: ${activeFilter === 'SUCCESS' ? '#fff' : '#047857'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${successCount}</span>
-      </button>
-
-      <button class="filter-tab-btn ${activeFilter === 'PENDING' ? 'active' : ''}" data-filter="PENDING" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'PENDING' ? '#d97706' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'PENDING' ? '#d97706' : '#fff'}; color: ${activeFilter === 'PENDING' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
-        Pending <span style="background: ${activeFilter === 'PENDING' ? 'rgba(255,255,255,0.25)' : '#fef3c7'}; color: ${activeFilter === 'PENDING' ? '#fff' : '#b45309'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${pendingCount}</span>
-      </button>
-
-      <button class="filter-tab-btn ${activeFilter === 'FAILED' ? 'active' : ''}" data-filter="FAILED" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'FAILED' ? '#dc2626' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'FAILED' ? '#dc2626' : '#fff'}; color: ${activeFilter === 'FAILED' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
-        Failed <span style="background: ${activeFilter === 'FAILED' ? 'rgba(255,255,255,0.25)' : '#fee2e2'}; color: ${activeFilter === 'FAILED' ? '#fff' : '#b91c1c'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${failedCount}</span>
-      </button>
-
-      <button class="filter-tab-btn ${activeFilter === 'REFUNDED' ? 'active' : ''}" data-filter="REFUNDED" style="padding: 8px 14px; font-size: 12px; font-weight: 700; border-radius: 999px; border: 1px solid ${activeFilter === 'REFUNDED' ? '#4b5563' : 'var(--color-neutral-300)'}; background: ${activeFilter === 'REFUNDED' ? '#4b5563' : '#fff'}; color: ${activeFilter === 'REFUNDED' ? '#fff' : 'var(--color-neutral-700)'}; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 36px;">
-        Refunded <span style="background: ${activeFilter === 'REFUNDED' ? 'rgba(255,255,255,0.25)' : '#e5e7eb'}; color: ${activeFilter === 'REFUNDED' ? '#fff' : '#374151'}; padding: 1px 7px; border-radius: 999px; font-size: 11px;">${refundedCount}</span>
-      </button>
-    </div>
-
     <!-- Transactions List Cards -->
-    ${
-      filteredList.length === 0
-        ? `
+    ${filteredList.length === 0
+      ? `
         <div style="background: #fff; border-radius: 20px; padding: 40px 16px; text-align: center; border: 1px solid var(--color-neutral-200);">
           <i class="fa-solid fa-receipt" style="font-size: 36px; color: var(--color-neutral-300); margin-bottom: 10px;"></i>
           <h4 style="font-size: 15px; font-weight: 700; color: var(--color-neutral-800); margin: 0 0 4px 0;">No transactions found</h4>
           <p style="font-size: 12px; color: var(--color-neutral-500); margin: 0;">No payments match the selected filter.</p>
         </div>
       `
-        : `
+      : `
         <div style="display: flex; flex-direction: column; gap: 10px;">
           ${filteredList.map((item) => renderTransactionCard(item)).join('')}
         </div>
@@ -363,49 +407,23 @@ export function formatPlanAndDurationTitle(
   const days = Number(durationDays) || 30;
 
   let durationLabel = '';
-  let standardTitle = '';
-
   if (days === 1) {
-    durationLabel = '1 Day';
-    standardTitle = '1 Day Plan (1 Day)';
+    durationLabel = '1 Day Pass';
   } else if (days === 7) {
-    durationLabel = '7 Days';
-    standardTitle = '7 Days Plan (7 Days)';
+    durationLabel = '7 Days Pass';
   } else if (days === 15) {
-    durationLabel = '15 Days';
-    standardTitle = '15 Days Plan (15 Days)';
+    durationLabel = '15 Days Pass';
   } else if (days === 30) {
     durationLabel = '30 Days (1 Month)';
-    standardTitle = '1 Month Plan (30 Days)';
   } else {
     const unit = days === 1 ? 'Day' : 'Days';
     durationLabel = `${days} ${unit}`;
-    standardTitle = `${days} Days Plan (${days} ${unit})`;
-  }
-
-  // Exactly as requested: 1 Day should display "1 Day Plan (1 Day)"
-  if (days === 1) {
-    return { title: '1 Day Plan (1 Day)', durationLabel };
   }
 
   const raw = (mealPlanTitle || '').trim();
+  const title = raw || 'Meal Plan';
 
-  // If raw title is generic or has conflicting prefix like "Weekly Executive Lunch Plan" / "Monthly Deluxe Veg Thali"
-  if (
-    !raw ||
-    /^(weekly|monthly)\s+(executive|veg|non-veg)?.*plan$/i.test(raw) ||
-    raw.toLowerCase().includes('standard mess')
-  ) {
-    return { title: standardTitle, durationLabel };
-  }
-
-  // If raw title is a specific dish/meal name
-  const cleanTitle = raw.replace(/^(Weekly|Monthly)\s+/i, '').trim();
-  const unit = days === 1 ? 'Day' : 'Days';
-  return {
-    title: `${cleanTitle} (${days} ${unit})`,
-    durationLabel,
-  };
+  return { title, durationLabel };
 }
 
 function renderTransactionCard(t: PaymentTransaction): string {
@@ -452,28 +470,32 @@ function renderTransactionCard(t: PaymentTransaction): string {
               <i class="fa-solid ${badgeIcon}"></i> ${badgeText}
             </span>
 
-            ${
-              t.supportTicket
-                ? `
+            ${t.supportTicket
+      ? `
               <span style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-headset"></i> Ticket #${escapeHtml(t.supportTicket.ticketNumber)}
               </span>
             `
-                : ''
-            }
+      : ''
+    }
           </div>
 
           <h4 class="font-display" style="font-size: 15px; font-weight: 800; color: var(--color-neutral-900); margin: 0 0 3px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
             ${escapeHtml(displayPlanTitle)}
           </h4>
 
-          <p style="font-size: 12px; color: var(--color-neutral-600); margin: 0 0 4px 0; display: flex; align-items: center; gap: 5px;">
+          <p style="font-size: 12px; color: var(--color-neutral-600); margin: 0 0 5px 0; display: flex; align-items: center; gap: 5px;">
             <i class="fa-solid fa-building-user" style="color: var(--color-primary-600);"></i>
             <span style="font-weight: 600; color: var(--color-neutral-800);">${escapeHtml(providerName)}</span>
           </p>
 
-          <div style="display: flex; gap: 10px; font-size: 11px; color: var(--color-neutral-500); flex-wrap: wrap;">
-            <span><i class="fa-solid fa-calendar"></i> ${formatDate(t.createdAt)}</span>
+          <div style="display: flex; gap: 8px; font-size: 11.5px; color: var(--color-neutral-700); flex-wrap: wrap;">
+            <span style="display: inline-flex; align-items: center; gap: 4px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 3px 8px; border-radius: 6px; font-weight: 600;">
+              <i class="fa-regular fa-calendar-days" style="color: var(--color-primary-600);"></i> ${formatDateOnly(t.createdAt)}
+            </span>
+            <span style="display: inline-flex; align-items: center; gap: 4px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 3px 8px; border-radius: 6px; font-weight: 600;">
+              <i class="fa-regular fa-clock" style="color: var(--color-primary-600);"></i> ${formatTimeOnly(t.createdAt)}
+            </span>
           </div>
         </div>
 
@@ -483,25 +505,23 @@ function renderTransactionCard(t: PaymentTransaction): string {
           </span>
 
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            ${
-              t.status === 'PENDING'
-                ? `
+            ${t.status === 'PENDING'
+      ? `
               <button class="check-status-card-btn btn-primary-action" data-order-id="${escapeHtml(t.razorpayOrderId)}" style="padding: 5px 10px; font-size: 11px; font-weight: 700; border-radius: 8px;">
                 Check Status
               </button>
             `
-                : ''
-            }
+      : ''
+    }
 
-            ${
-              t.status === 'FAILED' || t.status === 'PENDING'
-                ? `
+            ${t.status === 'FAILED' || t.status === 'PENDING'
+      ? `
               <button class="report-support-card-btn btn-outline-action" data-order-id="${escapeHtml(t.razorpayOrderId)}" data-amount="${t.amount}" style="padding: 5px 10px; font-size: 11px; font-weight: 700; border-radius: 8px; background: #fff;">
                 Report Issue
               </button>
             `
-                : ''
-            }
+      : ''
+    }
           </div>
         </div>
 
@@ -616,17 +636,15 @@ function renderDrawerContent() {
           </div>
         </div>
 
-        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--color-neutral-200); font-size: 11px; color: var(--color-neutral-600); display: flex; flex-direction: column; gap: 3px;">
-          <div><strong>Order ID:</strong> <code style="font-size: 11px;">${escapeHtml(payment.razorpayOrderId)}</code></div>
-          ${payment.razorpayPaymentId ? `<div><strong>Payment ID:</strong> <code style="font-size: 11px;">${escapeHtml(payment.razorpayPaymentId)}</code></div>` : ''}
-          <div><strong>Date:</strong> ${formatDate(payment.createdAt)}</div>
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--color-neutral-200); font-size: 11.5px; color: var(--color-neutral-600); display: flex; flex-direction: column; gap: 4px;">
+          <div><strong>Order ID:</strong> <code style="font-size: 11px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${escapeHtml(payment.razorpayOrderId)}</code></div>
+          ${payment.razorpayPaymentId ? `<div><strong>Payment ID:</strong> <code style="font-size: 11px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${escapeHtml(payment.razorpayPaymentId)}</code></div>` : ''}
         </div>
       </div>
 
       <!-- Support Ticket Section -->
-      ${
-        supportTicket
-          ? `
+      ${supportTicket
+      ? `
         <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 14px; padding: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <span style="font-size: 12px; font-weight: 800; color: #1e40af; display: flex; align-items: center; gap: 4px;">
@@ -640,72 +658,75 @@ function renderDrawerContent() {
           <p style="font-size: 11px; color: #3b82f6; margin: 0;"><strong>Description:</strong> ${escapeHtml(supportTicket.description)}</p>
         </div>
       `
-          : ''
-      }
+      : ''
+    }
 
       <!-- Timeline -->
       <div>
         <h4 style="font-size: 12px; font-weight: 800; color: var(--color-neutral-800); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 10px 0;">
-          <i class="fa-solid fa-timeline" style="color: var(--color-primary-600);"></i> Status Timeline
+          <i class="fa-solid fa-timeline" style="color: var(--color-primary-600);"></i> Status Timeline Track
         </h4>
 
-        <div style="display: flex; flex-direction: column; gap: 12px; padding-left: 6px; border-left: 2px solid var(--color-neutral-200); margin-left: 6px;">
+        <div style="display: flex; flex-direction: column; gap: 14px; padding-left: 6px; border-left: 2px solid var(--color-neutral-200); margin-left: 6px;">
           ${timeline
-            .map(
-              (event) => `
-            <div style="position: relative; padding-left: 14px;">
+      .map(
+        (event) => `
+            <div style="position: relative; padding-left: 16px;">
               <div style="position: absolute; left: -14px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: ${event.status === 'COMPLETED' ? '#10b981' : event.status === 'FAILED' ? '#ef4444' : '#f59e0b'}; border: 2px solid #fff; box-shadow: 0 0 0 2px ${event.status === 'COMPLETED' ? '#a7f3d0' : event.status === 'FAILED' ? '#fca5a5' : '#fde68a'};"></div>
-              <div style="font-size: 12px; font-weight: 700; color: var(--color-neutral-900);">${escapeHtml(event.title)}</div>
-              <div style="font-size: 11px; color: var(--color-neutral-600);">${escapeHtml(event.description)}</div>
-              <div style="font-size: 10px; color: var(--color-neutral-500); margin-top: 1px;">${formatDate(event.timestamp)}</div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap;">
+                <div style="font-size: 13px; font-weight: 800; color: var(--color-neutral-900); display: flex; align-items: center; gap: 6px;">
+                  ${event.status === 'COMPLETED' ? '<i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 13px;"></i>' : event.status === 'FAILED' ? '<i class="fa-solid fa-circle-xmark" style="color: #ef4444; font-size: 13px;"></i>' : '<i class="fa-solid fa-clock" style="color: #f59e0b; font-size: 13px;"></i>'}
+                  ${escapeHtml(event.title)}
+                </div>
+                <div style="font-size: 11px; font-weight: 700; color: #334155; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; gap: 4px;">
+                  <i class="fa-regular fa-clock" style="color: var(--color-primary-600); font-size: 10px;"></i> ${formatDateTime(event.timestamp)}
+                </div>
+              </div>
+              <div style="font-size: 12px; color: var(--color-neutral-600); margin-top: 3px; line-height: 1.4;">${escapeHtml(event.description)}</div>
             </div>
           `,
-            )
-            .join('')}
+      )
+      .join('')}
         </div>
       </div>
 
       <!-- Footer Buttons -->
       <div style="display: flex; gap: 8px; border-top: 1px solid var(--color-neutral-200); padding-top: 14px; flex-wrap: wrap;">
-        ${
-          payment.status === 'PENDING'
-            ? `
+        ${payment.status === 'PENDING'
+      ? `
           <button id="drawerCheckStatusBtn" class="btn-primary-action" style="flex: 1; min-width: 130px; justify-content: center; padding: 9px; font-size: 12px;">
             ${isCheckingStatus ? '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...' : '<i class="fa-solid fa-arrows-rotate"></i> Check Status'}
           </button>
         `
-            : ''
-        }
+      : ''
+    }
 
-        ${
-          payment.status === 'FAILED'
-            ? `
+        ${payment.status === 'FAILED'
+      ? `
           <a href="/providers" class="btn-primary-action" style="flex: 1; min-width: 120px; text-decoration: none; justify-content: center; padding: 9px; font-size: 12px;">
             <i class="fa-solid fa-rotate-right"></i> Try Again
           </a>
         `
-            : ''
-        }
+      : ''
+    }
 
-        ${
-          payment.status === 'SUCCESS' && subscription
-            ? `
+        ${payment.status === 'SUCCESS' && subscription
+      ? `
           <a href="/student/dashboard" class="btn-primary-action" style="flex: 1; min-width: 130px; text-decoration: none; justify-content: center; padding: 9px; font-size: 12px;">
             <i class="fa-solid fa-qrcode"></i> View Mess Card
           </a>
         `
-            : ''
-        }
+      : ''
+    }
 
-        ${
-          payment.status === 'SUCCESS' && !subscription
-            ? `
+        ${payment.status === 'SUCCESS' && !subscription
+      ? `
           <button id="drawerCheckStatusBtn" class="btn-outline-action" style="flex: 1; min-width: 130px; justify-content: center; padding: 9px; font-size: 12px; background: #fff;">
             <i class="fa-solid fa-arrows-rotate"></i> Sync Subscription
           </button>
         `
-            : ''
-        }
+      : ''
+    }
 
         <button id="drawerReportIssueBtn" class="btn-outline-action" style="flex: 1; min-width: 130px; justify-content: center; padding: 9px; font-size: 12px; background: #fff;">
           <i class="fa-solid fa-headset"></i> ${supportTicket ? 'View Ticket' : 'Report Issue'}
@@ -784,9 +805,8 @@ function renderSupportModalContent() {
       <button id="closeSupportModalBtn" style="background: none; border: none; font-size: 22px; cursor: pointer; color: var(--color-neutral-500); padding: 0 4px;">&times;</button>
     </div>
 
-    ${
-      supportFormSuccessTicket
-        ? `
+    ${supportFormSuccessTicket
+      ? `
       <div style="background: #d1fae5; border: 1px solid #a7f3d0; color: #065f46; padding: 18px 14px; border-radius: 14px; text-align: center; margin-bottom: 14px;">
         <i class="fa-solid fa-circle-check" style="font-size: 28px; margin-bottom: 6px; color: #059669;"></i>
         <h4 style="font-size: 15px; font-weight: 800; margin: 0 0 4px 0;">Ticket Raised Successfully!</h4>
@@ -795,15 +815,14 @@ function renderSupportModalContent() {
       </div>
       <button id="doneSupportModalBtn" class="btn-primary-action" style="width: 100%; justify-content: center; padding: 9px; font-weight: 700; border-radius: 10px; font-size: 13px;">Done</button>
     `
-        : `
-      ${
-        supportFormError
-          ? `
+      : `
+      ${supportFormError
+        ? `
         <div style="background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-bottom: 12px;">
           ${escapeHtml(supportFormError)}
         </div>
       `
-          : ''
+        : ''
       }
 
       <form id="supportTicketForm" style="display: flex; flex-direction: column; gap: 12px;">

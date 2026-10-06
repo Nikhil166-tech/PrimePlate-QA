@@ -173,73 +173,118 @@ export async function renderDashboard() {
       </main>
 
       <!-- View Details Modal -->
-      <div id="subDetailsModal" style="display: ${selectedSubForDetails ? 'flex' : 'none'}; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000; padding: 20px;">
+      <div id="subDetailsModal" style="display: ${selectedSubForDetails ? 'flex' : 'none'}; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 2500; padding: 16px;">
         ${selectedSubForDetails ? `
-          <div style="background: #fff; border-radius: 24px; max-width: 480px; width: 100%; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--color-neutral-200); padding-bottom: 12px;">
-              <h3 class="font-display" style="font-size: 20px; font-weight: 800; color: var(--color-neutral-900); margin: 0;">Subscription Details</h3>
-              <button id="closeDetailsModalBtn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--color-neutral-500);">&times;</button>
+          <div style="background: #fff; border-radius: 24px; max-width: 520px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; border: 1px solid var(--color-neutral-200); position: relative;">
+            
+            <!-- Modal Header -->
+            <div style="padding: 20px 24px; border-bottom: 1px solid var(--color-neutral-200); display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);">
+              <div>
+                <span style="font-size: 11px; font-weight: 800; color: var(--color-primary-600); text-transform: uppercase; letter-spacing: 0.5px;">Subscription Overview</span>
+                <h3 class="font-display" style="font-size: 19px; font-weight: 800; color: var(--color-neutral-900); margin: 2px 0 0 0;">
+                  ${escapeHtml(selectedSubForDetails.planType)}
+                </h3>
+              </div>
+              <button id="closeDetailsModalBtn" style="background: #f1f5f9; border: none; font-size: 18px; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; color: var(--color-neutral-600); display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">&times;</button>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 14px; font-size: 14px;">
-              <div>
-                <span style="font-size: 12px; color: var(--color-neutral-500); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 2px;">PG / Hostel / Mess</span>
-                <strong style="font-size: 16px; color: var(--color-neutral-900); display: block;">${escapeHtml(selectedSubForDetails.messName)}</strong>
-                <span style="font-size: 13px; color: var(--color-neutral-600);"><i class="fa-solid fa-location-dot"></i> ${escapeHtml(selectedSubForDetails.area)}${selectedSubForDetails.city ? ', ' + escapeHtml(selectedSubForDetails.city) : ''}</span>
+            <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px; font-size: 13.5px;">
+              
+              <!-- Provider Block -->
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 44px; height: 44px; border-radius: 12px; background: #ffedd5; color: #ea580c; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 1px solid #fed7aa;">
+                    <i class="fa-solid fa-utensils"></i>
+                  </div>
+                  <div>
+                    <h4 style="font-size: 15px; font-weight: 800; color: var(--color-neutral-900); margin: 0 0 2px 0;">${escapeHtml(selectedSubForDetails.messName)}</h4>
+                    <p style="font-size: 12px; color: var(--color-neutral-500); margin: 0; display: flex; align-items: center; gap: 4px;">
+                      <i class="fa-solid fa-location-dot" style="color: var(--color-primary-600); font-size: 11px;"></i>
+                      <span>${escapeHtml(selectedSubForDetails.area)}${selectedSubForDetails.city ? ', ' + escapeHtml(selectedSubForDetails.city) : ''}</span>
+                    </p>
+                  </div>
+                </div>
+                ${selectedSubForDetails.contact_phone ? `
+                  <a href="tel:${escapeHtml(selectedSubForDetails.contact_phone)}" class="btn-outline-action" style="padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 8px; text-decoration: none; background: #fff; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-phone"></i> Call Mess
+                  </a>
+                ` : ''}
               </div>
 
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: var(--color-neutral-50); padding: 14px; border-radius: 12px;">
-                <div>
-                  <span style="font-size: 12px; color: var(--color-neutral-500); font-weight: 600; display: block;">Plan</span>
-                  <strong style="color: var(--color-neutral-900);">${escapeHtml(selectedSubForDetails.planType)}</strong>
-                </div>
-                <div>
-                  <span style="font-size: 12px; color: var(--color-neutral-500); font-weight: 600; display: block;">Amount Paid</span>
-                  <strong style="color: var(--color-primary-600); font-size: 16px;">${escapeHtml(selectedSubForDetails.amountPaidDisplay)}</strong>
-                </div>
-              </div>
-
+              <!-- Key Metrics 2x2 Grid -->
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div>
-                  <span style="font-size: 12px; color: var(--color-neutral-500); font-weight: 600; display: block;">Payment Status</span>
-                  <span style="font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: ${selectedSubForDetails.paymentStatus === 'PAID' ? 'var(--color-success-50)' : '#fee2e2'}; color: ${selectedSubForDetails.paymentStatus === 'PAID' ? 'var(--color-success-600)' : '#dc2626'}; inline-block;">
-                    ${escapeHtml(selectedSubForDetails.paymentStatus)}
-                  </span>
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px;">
+                  <span style="font-size: 11px; color: var(--color-neutral-400); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 2px;">Amount Paid</span>
+                  <strong style="font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--color-primary-600);">${escapeHtml(selectedSubForDetails.amountPaidDisplay)}</strong>
                 </div>
-                <div>
-                  <span style="font-size: 12px; color: var(--color-neutral-500); font-weight: 600; display: block;">Subscription Status</span>
-                  <span style="font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: ${selectedSubForDetails.status === 'ACTIVE' ? 'var(--color-success-50)' : 'var(--color-neutral-100)'}; color: ${selectedSubForDetails.status === 'ACTIVE' ? 'var(--color-success-600)' : 'var(--color-neutral-600)'}; inline-block;">
-                    ${escapeHtml(selectedSubForDetails.status)}
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px;">
+                  <span style="font-size: 11px; color: var(--color-neutral-400); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Status</span>
+                  <span style="font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; ${selectedSubForDetails.status === 'ACTIVE'
+          ? 'background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;'
+          : selectedSubForDetails.status === 'CANCELLED'
+            ? 'background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;'
+            : 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;'
+        } display: inline-flex; align-items: center; gap: 4px;">
+                    ${selectedSubForDetails.status === 'ACTIVE' ? '<span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span> Active' : selectedSubForDetails.status}
                   </span>
                 </div>
               </div>
 
-              <div style="border-top: 1px solid var(--color-neutral-200); padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--color-neutral-500);">Meal Option:</span>
-                  <span style="font-weight: 700; color: var(--color-primary-700);">${selectedSubForDetails.mealType === 'LUNCH_ONLY' ? 'Lunch Only (Lunch)' : selectedSubForDetails.mealType === 'DINNER_ONLY' ? 'Dinner Only (Dinner)' : 'Full Day (All Meals)'}</span>
+              <!-- Detailed Info List -->
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--color-neutral-500); font-size: 12.5px;">Meal Coverage:</span>
+                  <span style="font-weight: 700; color: var(--color-neutral-900); font-size: 12.5px;">
+                    ${selectedSubForDetails.mealType === 'LUNCH_ONLY' ? 'Lunch Only (Lunch)' : selectedSubForDetails.mealType === 'DINNER_ONLY' ? 'Dinner Only (Dinner)' : 'Full Day (All Meals)'}
+                  </span>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--color-neutral-500);">Payment Date:</span>
-                  <span style="font-weight: 600; color: var(--color-neutral-800);">${escapeHtml(selectedSubForDetails.paymentDateFormatted)}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--color-neutral-500); font-size: 12.5px;">Payment Status:</span>
+                  <span style="font-weight: 700; color: ${selectedSubForDetails.paymentStatus === 'PAID' ? '#15803d' : '#dc2626'}; font-size: 12.5px; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid ${selectedSubForDetails.paymentStatus === 'PAID' ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${escapeHtml(selectedSubForDetails.paymentStatus)}
+                  </span>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--color-neutral-500);">Start Date:</span>
-                  <span style="font-weight: 600; color: var(--color-neutral-800);">${escapeHtml(selectedSubForDetails.startDate)}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--color-neutral-500); font-size: 12.5px;">Payment Date:</span>
+                  <span style="font-weight: 600; color: var(--color-neutral-800); font-size: 12.5px;">${escapeHtml(selectedSubForDetails.paymentDateFormatted)}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--color-neutral-500);">End Date:</span>
-                  <span style="font-weight: 600; color: var(--color-neutral-800);">${escapeHtml(selectedSubForDetails.endDate)}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: var(--color-neutral-500); font-size: 12.5px;">Validity Period:</span>
+                  <span style="font-weight: 700; color: var(--color-neutral-900); font-size: 12.5px;">${escapeHtml(selectedSubForDetails.startDate)} → ${escapeHtml(selectedSubForDetails.endDate || 'Active')}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--color-neutral-500);">Payment Reference:</span>
-                  <span style="font-family: monospace; font-size: 12px; color: var(--color-neutral-700);">${escapeHtml(selectedSubForDetails.safeRef)}</span>
+                ${selectedSubForDetails.recoveryDaysApplied > 0 ? `
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: #ecfdf5; padding: 6px 10px; border-radius: 8px; border: 1px dashed #a7f3d0;">
+                    <span style="color: #166534; font-size: 12px; font-weight: 700;">Meal Recovery Applied:</span>
+                    <span style="font-weight: 800; color: #15803d; font-size: 12px;">+${selectedSubForDetails.recoveryDaysApplied} Extra Days</span>
+                  </div>
+                ` : ''}
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
+                  <span style="color: var(--color-neutral-500); font-size: 12px;">Order / Reference:</span>
+                  <code style="font-size: 11px; background: #e2e8f0; padding: 2px 6px; border-radius: 6px; color: var(--color-neutral-800);">${escapeHtml(selectedSubForDetails.safeRef)}</code>
                 </div>
               </div>
 
-              <button id="closeDetailsModalBtn2" class="btn-primary-action" style="width: 100%; margin-top: 12px; padding: 12px; justify-content: center;">
-                Close Details
-              </button>
+              <!-- Action Buttons Inside Modal -->
+              <div style="display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap;">
+                ${selectedSubForDetails.providerId ? `
+                  <button id="modalVisitKitchenBtn" class="btn-outline-action" data-prov-id="${escapeHtml(selectedSubForDetails.providerId)}" style="flex: 1; min-width: 130px; padding: 11px; justify-content: center; font-size: 13px; font-weight: 700; background: #fff; border-radius: 12px;">
+                    <i class="fa-solid fa-utensils"></i> Kitchen Menu
+                  </button>
+                ` : ''}
+                ${selectedSubForDetails.status === 'ACTIVE' ? `
+                  <button id="modalViewPassBtn" class="btn-primary-action" style="flex: 1; min-width: 140px; padding: 11px; justify-content: center; font-size: 13px; font-weight: 700; border-radius: 12px;">
+                    <i class="fa-solid fa-qrcode"></i> View Mess Card
+                  </button>
+                ` : `
+                  <button id="modalRenewSubBtn" class="btn-primary-action" data-plan-id="${escapeHtml(selectedSubForDetails.planId)}" data-prov-id="${escapeHtml(selectedSubForDetails.providerId)}" style="flex: 1; min-width: 140px; padding: 11px; justify-content: center; font-size: 13px; font-weight: 700; border-radius: 12px;">
+                    <i class="fa-solid fa-rotate-right"></i> Renew Plan
+                  </button>
+                `}
+                <button id="closeDetailsModalBtn2" class="btn-outline-action" style="width: 100%; padding: 10px; justify-content: center; font-size: 12.5px; border-radius: 10px; background: #fff; color: var(--color-neutral-600);">
+                  Close
+                </button>
+              </div>
+
             </div>
           </div>
         ` : ''}
@@ -551,6 +596,11 @@ export async function renderDashboard() {
           const days = subHist.days || [];
           const usedDaysCount = subHist.totalUsedCount ?? days.filter((d: any) => d.status === 'USED').length;
 
+          const matchingSub = loadedSubs.find((s) => s.id === subHist.subscriptionId);
+          const isSubExpired = matchingSub
+            ? (matchingSub.status === 'EXPIRED' || matchingSub.status === 'CANCELLED')
+            : (subHist.status === 'EXPIRED' || subHist.status === 'CANCELLED' || (subHist.endDate && subHist.endDate < todayStr));
+
           return `
             <div class="meal-history-subscription-card" style="grid-column: 1/-1; background: #fff; border: 1px solid var(--color-neutral-200); border-radius: 20px; padding: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.03); margin-bottom: 16px; box-sizing: border-box;">
               <!-- Compact Subscription Header -->
@@ -574,21 +624,49 @@ export async function renderDashboard() {
                     <span style="font-size: 11px; color: var(--color-neutral-500); font-weight: 600;">Checked in:</span>
                     <strong style="font-size: 13px; color: var(--color-primary-700);">${usedDaysCount} Days</strong>
                   </div>
-                  <button class="open-scanner-sub-btn btn-primary-action" style="padding: 7px 13px; font-size: 12px; font-weight: 700; border-radius: 10px;">
-                    <i class="fa-solid fa-camera"></i> Scan Meal
-                  </button>
+                  ${!isSubExpired ? `
+                    <button class="open-scanner-sub-btn btn-primary-action" style="padding: 7px 13px; font-size: 12px; font-weight: 700; border-radius: 10px;">
+                      <i class="fa-solid fa-camera"></i> Scan Meal
+                    </button>
+                  ` : `
+                    <span style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 4px;">
+                      <i class="fa-solid fa-clock-rotate-left"></i> Expired
+                    </span>
+                  `}
                 </div>
               </div>
 
-              <!-- Compact DayPicker Meal Calendar Mount Point -->
-              <div id="meal-calendar-mount-${escapeHtml(subHist.subscriptionId)}" class="meal-calendar-mount-point" style="width: 100%; display: flex; justify-content: center; margin-top: 10px;"></div>
+              <!-- Calendar Section (Active Only) vs Expired Summary -->
+              ${!isSubExpired ? `
+                <div id="meal-calendar-mount-${escapeHtml(subHist.subscriptionId)}" class="meal-calendar-mount-point" style="width: 100%; display: flex; justify-content: center; margin-top: 10px;"></div>
+              ` : `
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 14px; padding: 16px 20px; text-align: center; margin-top: 10px;">
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--color-neutral-700); font-size: 13.5px; font-weight: 700;">
+                    <i class="fa-solid fa-calendar-xmark" style="color: var(--color-neutral-400); font-size: 16px;"></i>
+                    <span>Subscription Completed (${escapeHtml(subHist.startDate || '')} → ${escapeHtml(subHist.endDate || '')})</span>
+                  </div>
+                  <p style="font-size: 12px; color: var(--color-neutral-500); margin: 6px 0 14px 0;">
+                    Daily check-in calendar has ended for this subscription cycle. Total attendance: <strong>${usedDaysCount} days</strong>.
+                  </p>
+                  <button class="renew-expired-hist-btn btn-primary-action" data-prov-id="${escapeHtml(matchingSub?.providerId || subHist.providerId || '')}" data-plan-id="${escapeHtml(matchingSub?.planId || '')}" style="padding: 7px 18px; font-size: 12px; font-weight: 700; border-radius: 8px; margin: 0 auto; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-rotate-right"></i> Renew Subscription
+                  </button>
+                </div>
+              `}
             </div>
           `;
         })
         .join('');
 
-      // Mount DayPicker MealCalendar for each subscription
+      // Mount DayPicker MealCalendar ONLY for active subscriptions
       loadedMealHistory.forEach((subHist) => {
+        const matchingSub = loadedSubs.find((s) => s.id === subHist.subscriptionId);
+        const isSubExpired = matchingSub
+          ? (matchingSub.status === 'EXPIRED' || matchingSub.status === 'CANCELLED')
+          : (subHist.status === 'EXPIRED' || subHist.status === 'CANCELLED' || (subHist.endDate && subHist.endDate < todayStr));
+
+        if (isSubExpired) return;
+
         const mountContainer = document.getElementById(`meal-calendar-mount-${subHist.subscriptionId}`);
         if (!mountContainer) return;
 
@@ -625,6 +703,20 @@ export async function renderDashboard() {
         });
       });
 
+      subsGrid.querySelectorAll('.renew-expired-hist-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const planId = (e.currentTarget as HTMLElement).getAttribute('data-plan-id');
+          const provId = (e.currentTarget as HTMLElement).getAttribute('data-prov-id');
+          if (planId) {
+            navigate(`/checkout/${planId}`);
+          } else if (provId) {
+            navigate(`/providers/${provId}`);
+          } else {
+            navigate('/providers');
+          }
+        });
+      });
+
       subsGrid.querySelectorAll('.use-recovery-plan-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const pId = (e.currentTarget as HTMLElement).getAttribute('data-prov-id');
@@ -653,73 +745,123 @@ export async function renderDashboard() {
         .map((s, idx) => {
           const isActive = s.status === 'ACTIVE';
           const isCancelled = s.status === 'CANCELLED';
-          const isExpired = s.status === 'EXPIRED';
 
-          let statusBadgeBg = 'var(--color-neutral-100)';
-          let statusBadgeColor = 'var(--color-neutral-600)';
+          let statusBadgeHtml = `
+            <span style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-clock-rotate-left"></i> Expired
+            </span>
+          `;
           if (isActive) {
-            statusBadgeBg = 'var(--color-success-50)';
-            statusBadgeColor = 'var(--color-success-600)';
+            statusBadgeHtml = `
+              <span style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 5px;">
+                <span style="width: 7px; height: 7px; border-radius: 999px; background: #10b981; display: inline-block;"></span> Active
+              </span>
+            `;
           } else if (isCancelled) {
-            statusBadgeBg = '#fee2e2';
-            statusBadgeColor = '#dc2626';
-          } else if (isExpired) {
-            statusBadgeBg = '#f1f5f9';
-            statusBadgeColor = '#64748b';
+            statusBadgeHtml = `
+              <span style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; display: inline-flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-ban"></i> Cancelled
+              </span>
+            `;
           }
 
-          return `
-          <div style="background: #fff; border: 1px solid var(--color-neutral-200); border-radius: 20px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 8px;">
-                <div>
-                  <h3 class="font-display" style="font-size: 18px; font-weight: 800; color: var(--color-neutral-900); margin: 0 0 2px 0;">${escapeHtml(s.messName)}</h3>
-                  <p style="font-size: 12px; color: var(--color-neutral-500); margin: 0;">
-                    <i class="fa-solid fa-location-dot"></i> ${escapeHtml(s.area)}${s.city ? ', ' + escapeHtml(s.city) : ''}
-                  </p>
-                </div>
-                <span style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; background: ${statusBadgeBg}; color: ${statusBadgeColor}; text-transform: uppercase;">
-                  ${escapeHtml(s.status)}
-                </span>
-              </div>
+          const mealBadgeStyle = s.mealType === 'LUNCH_ONLY'
+            ? 'background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;'
+            : s.mealType === 'DINNER_ONLY'
+              ? 'background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff;'
+              : 'background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa;';
 
-              <div style="background: var(--color-neutral-50); border: 1px solid var(--color-neutral-200); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 12px; color: var(--color-neutral-500); font-weight: 600;">Plan</span>
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="font-size: 14px; font-weight: 700; color: var(--color-neutral-900);">${escapeHtml(s.planType)}</span>
-                    <span style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; ${s.mealType === 'LUNCH_ONLY' ? 'background: #e0f2fe; color: #0369a1;' : s.mealType === 'DINNER_ONLY' ? 'background: #f3e8ff; color: #6b21a8;' : 'background: #ffedd5; color: #c2410c;'}">
-                      ${s.mealType === 'LUNCH_ONLY' ? 'Lunch' : s.mealType === 'DINNER_ONLY' ? 'Dinner' : 'Full Day'}
-                    </span>
+          const mealIcon = s.mealType === 'LUNCH_ONLY'
+            ? '<i class="fa-solid fa-bowl-food"></i>'
+            : s.mealType === 'DINNER_ONLY'
+              ? '<i class="fa-solid fa-moon"></i>'
+              : '<i class="fa-solid fa-sun"></i>';
+
+          const mealLabel = s.mealType === 'LUNCH_ONLY'
+            ? 'Lunch Only'
+            : s.mealType === 'DINNER_ONLY'
+              ? 'Dinner Only'
+              : 'Full Day Plan';
+
+          return `
+          <div class="subscription-history-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+            <div>
+              <!-- Header: Mess Title & Status Pill -->
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                  <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--color-primary-50), #ffedd5); color: var(--color-primary-600); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 1px solid #fed7aa;">
+                    <i class="fa-solid fa-utensils"></i>
+                  </div>
+                  <div style="min-width: 0;">
+                    <h3 class="font-display" style="font-size: 17px; font-weight: 800; color: var(--color-neutral-900); margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(s.messName)}">
+                      ${escapeHtml(s.messName)}
+                    </h3>
+                    <p style="font-size: 12px; color: var(--color-neutral-500); margin: 0; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      <i class="fa-solid fa-location-dot" style="color: var(--color-primary-500); font-size: 11px;"></i>
+                      <span>${escapeHtml(s.area)}${s.city ? ', ' + escapeHtml(s.city) : ''}</span>
+                    </p>
                   </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 12px; color: var(--color-neutral-500); font-weight: 600;">Amount Paid</span>
-                  <span style="font-size: 16px; font-weight: 800; color: var(--color-primary-600);">${escapeHtml(s.amountPaidDisplay)}</span>
+                <div style="flex-shrink: 0;">
+                  ${statusBadgeHtml}
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 12px; color: var(--color-neutral-500); font-weight: 600;">Payment Status</span>
-                  <span style="font-size: 11px; font-weight: 700; color: ${s.paymentStatus === 'PAID' ? 'var(--color-success-600)' : '#dc2626'};">
+              </div>
+
+              <!-- Inner Card: Plan, Amount & Payment -->
+              <div style="background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                    <span style="font-size: 13.5px; font-weight: 700; color: var(--color-neutral-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(s.planType)}</span>
+                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; ${mealBadgeStyle}; display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                      ${mealIcon} ${mealLabel}
+                    </span>
+                  </div>
+                  <span style="font-size: 11px; font-weight: 700; color: ${s.paymentStatus === 'PAID' ? '#15803d' : '#dc2626'}; background: ${s.paymentStatus === 'PAID' ? '#dcfce7' : '#fee2e2'}; padding: 2px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;">
                     <i class="fa-solid ${s.paymentStatus === 'PAID' ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i> ${escapeHtml(s.paymentStatus)}
                   </span>
                 </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                  <div>
+                    <span style="font-size: 11px; color: var(--color-neutral-500); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 1px;">Amount Paid</span>
+                    <span style="font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--color-primary-600); line-height: 1.2;">${escapeHtml(s.amountPaidDisplay)}</span>
+                  </div>
+                  ${s.status === 'ACTIVE' && s.daysLeft > 0 ? `
+                    <span style="font-size: 11px; font-weight: 700; color: #047857; background: #d1fae5; padding: 3px 8px; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;">
+                      <i class="fa-solid fa-hourglass-half"></i> ${s.daysLeft} days left
+                    </span>
+                  ` : ''}
+                </div>
               </div>
 
-              <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--color-neutral-600); margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span>Payment Date:</span>
-                  <span style="font-weight: 600; color: var(--color-neutral-800);">${escapeHtml(s.paymentDateFormatted)}</span>
+              <!-- Metadata Timeline Grid -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; color: var(--color-neutral-600); margin-bottom: 16px; background: #ffffff; border: 1px solid #f1f5f9; border-radius: 12px; padding: 10px 12px;">
+                <div>
+                  <span style="font-size: 10.5px; color: var(--color-neutral-400); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 2px;">Payment Date</span>
+                  <strong style="color: var(--color-neutral-800); font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    <i class="fa-regular fa-calendar-check" style="color: var(--color-neutral-400); font-size: 11px;"></i> ${escapeHtml(s.paymentDateFormatted)}
+                  </strong>
                 </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span>Valid Period:</span>
-                  <span style="font-weight: 600; color: var(--color-neutral-800);">${escapeHtml(s.startDate)} → ${escapeHtml(s.endDate || 'Active')}</span>
+                <div>
+                  <span style="font-size: 10.5px; color: var(--color-neutral-400); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 2px;">Valid Period</span>
+                  <strong style="color: var(--color-neutral-800); font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                    <i class="fa-regular fa-clock" style="color: var(--color-neutral-400); font-size: 11px;"></i> ${escapeHtml(s.startDate)} → ${escapeHtml(s.endDate || 'Active')}
+                  </strong>
                 </div>
               </div>
             </div>
 
-            <button class="view-sub-details-btn btn-outline-action" data-idx="${idx}" style="width: 100%; padding: 10px; font-size: 13px; font-weight: 600;">
-              <i class="fa-solid fa-circle-info"></i> View Details
-            </button>
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 8px; margin-top: auto;">
+              <button class="view-sub-details-btn btn-outline-action" data-idx="${idx}" style="flex: 1; padding: 9px 12px; font-size: 12.5px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #fff;">
+                <i class="fa-solid fa-circle-info"></i> View Details
+              </button>
+              ${s.providerId ? `
+                <button class="history-visit-kitchen-btn btn-primary-action" data-prov-id="${escapeHtml(s.providerId)}" style="padding: 9px 14px; font-size: 12.5px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap;">
+                  <i class="fa-solid fa-utensils"></i> Kitchen
+                </button>
+              ` : ''}
+            </div>
           </div>
         `;
         })
@@ -731,6 +873,13 @@ export async function renderDashboard() {
           selectedSubForDetails = loadedSubs[idx];
           renderPage();
           updateContentDisplay();
+        });
+      });
+
+      subsGrid.querySelectorAll('.history-visit-kitchen-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const pId = (e.currentTarget as HTMLElement).getAttribute('data-prov-id');
+          if (pId) navigate(`/providers/${pId}`);
         });
       });
     }
