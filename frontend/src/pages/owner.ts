@@ -495,7 +495,7 @@ export async function renderOwnerPortal() {
     const ownerPhone = localStorage.getItem('userPhone') || 'Not available';
 
     // Reusable Content Generators for Sections & Modals
-    const renderManagePgContent = () => `
+    const renderManagePgContent = (isMobile = false) => `
       <div style="display: flex; flex-direction: column; gap: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; background: var(--color-neutral-50); border: 1px solid var(--color-neutral-200); border-radius: 14px; flex-wrap: wrap;">
           <div>
@@ -551,13 +551,31 @@ export async function renderOwnerPortal() {
           </button>
         </div>
 
-        ${renderRecoveryPolicyCard()}
+        ${renderRecoveryPolicyCard(isMobile ? 'mobileSheet' : 'managePg')}
       </div>
     `;
 
-    const renderRecoveryPolicyCard = () => {
+    const renderRecoveryPolicyCard = (context: 'primary' | 'managePg' | 'mobileSheet' = 'primary') => {
       const isRecoveryEnabled = selectedHostel ? selectedHostel.mealRecoveryEnabled !== false : (recoveryStats ? recoveryStats.mealRecoveryEnabled !== false : true);
       const currentPct = selectedHostel?.recoveryPercentage ?? recoveryStats?.recoveryPercentage ?? 80;
+
+      const toggleId = context === 'primary'
+        ? 'providerRecoveryToggle'
+        : context === 'managePg'
+          ? 'managePgRecoveryToggle'
+          : 'mobileSheetRecoveryToggle';
+
+      const statusId = context === 'primary'
+        ? 'providerRecoveryToggleStatus'
+        : context === 'managePg'
+          ? 'managePgRecoveryToggleStatus'
+          : 'mobileSheetRecoveryToggleStatus';
+
+      const toggleAriaLabel = context === 'primary'
+        ? 'Toggle meal recovery policy'
+        : context === 'managePg'
+          ? 'Toggle meal recovery policy (Manage PG)'
+          : 'Toggle meal recovery policy (Mobile Sheet)';
 
       return `
       <!-- Meal Recovery Policy Settings Card -->
@@ -577,9 +595,9 @@ export async function renderOwnerPortal() {
 
           <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <!-- Mobile-first Toggle Control -->
-            <label class="meal-recovery-toggle-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; background: #fff; border: 1px solid var(--color-neutral-300); border-radius: 999px; padding: 4px 10px 4px 6px;">
-              <input type="checkbox" id="providerRecoveryToggle" class="recovery-toggle-switch" ${isRecoveryEnabled ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--color-primary-600); cursor: pointer;" />
-              <span id="providerRecoveryToggleStatus" style="font-size: 12px; font-weight: 700; color: ${isRecoveryEnabled ? 'var(--color-primary-700)' : 'var(--color-neutral-500)'};">
+            <label class="meal-recovery-toggle-label" for="${toggleId}" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; background: #fff; border: 1px solid var(--color-neutral-300); border-radius: 999px; padding: 4px 10px 4px 6px;">
+              <input type="checkbox" id="${toggleId}" name="${toggleId}" class="recovery-toggle-switch" aria-describedby="${statusId}" aria-label="${toggleAriaLabel}" ${isRecoveryEnabled ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--color-primary-600); cursor: pointer;" />
+              <span id="${statusId}" style="font-size: 12px; font-weight: 700; color: ${isRecoveryEnabled ? 'var(--color-primary-700)' : 'var(--color-neutral-500)'};">
                 ${isRecoveryEnabled ? 'Meal Recovery Enabled' : 'Meal Recovery Disabled'}
               </span>
             </label>
@@ -661,9 +679,9 @@ export async function renderOwnerPortal() {
       `}
     `;
 
-    const renderRecoverySettingsContent = () => `
+    const renderRecoverySettingsContent = (isMobile = false) => `
       <div style="display: flex; flex-direction: column; gap: 20px;">
-        ${renderRecoveryPolicyCard()}
+        ${renderRecoveryPolicyCard(isMobile ? 'mobileSheet' : 'primary')}
 
         <div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
@@ -1780,7 +1798,7 @@ export async function renderOwnerPortal() {
                   </button>
 
                   <div id="secondaryManagePanel" style="display: ${showManagePanel ? 'flex' : 'none'}; flex-direction: column; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-neutral-200);">
-                    ${renderManagePgContent()}
+                    ${renderManagePgContent(false)}
                   </div>
                 </div>
 
@@ -1882,7 +1900,7 @@ export async function renderOwnerPortal() {
                       <span style="font-size: 12px; color: var(--color-neutral-500);">Adjust policy rate (50% – 100%) and view cumulative recovery statistics</span>
                     </div>
                   </div>
-                  ${renderRecoverySettingsContent()}
+                  ${renderRecoverySettingsContent(false)}
                 </div>
               </div>
             `
@@ -1909,7 +1927,7 @@ export async function renderOwnerPortal() {
               </h3>
               <button class="close-mobile-sheet-btn" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--color-neutral-500); padding: 4px 8px;">&times;</button>
             </div>
-            ${mobileSheet === 'MANAGE_PG' ? renderManagePgContent() :
+            ${mobileSheet === 'MANAGE_PG' ? renderManagePgContent(true) :
           mobileSheet === 'HOSTEL_IMAGES' ? renderHostelImagesContent() :
             mobileSheet === 'MEAL_QR' ? renderMealQrContent() :
               mobileSheet === 'TODAYS_CHECKINS' ? renderTodayCheckInsContent() :
@@ -1927,8 +1945,8 @@ export async function renderOwnerPortal() {
                       </div>
                     </div>
                   ` :
-                        (mobileSheet === 'RECOVERY_SETTINGS' || mobileSheet === 'MEAL_RECOVERY') ? renderRecoverySettingsContent() :
-                          renderManagePgContent()
+                        (mobileSheet === 'RECOVERY_SETTINGS' || mobileSheet === 'MEAL_RECOVERY') ? renderRecoverySettingsContent(true) :
+                          renderManagePgContent(true)
         }
           </div>
         </div>
@@ -4103,28 +4121,30 @@ export async function renderOwnerPortal() {
       window.addEventListener('keydown', handleEscapeKey, { once: true });
     }
 
-    // Meal Recovery Toggle Button — enable / disable provider's meal recovery policy
-    const recoveryToggleEl = document.getElementById('providerRecoveryToggle') as HTMLInputElement | null;
-    recoveryToggleEl?.addEventListener('change', async () => {
-      if (!selectedHostel) return;
-      if (isUpdatingRecoveryToggle) return;
-      const targetChecked = recoveryToggleEl.checked;
-      isUpdatingRecoveryToggle = true;
-      try {
-        await updateProviderMealRecoveryEnabled(selectedHostel.id, targetChecked);
-        selectedHostel.mealRecoveryEnabled = targetChecked;
-        if (recoveryStats) recoveryStats.mealRecoveryEnabled = targetChecked;
-        showToast(
-          targetChecked ? 'Meal Recovery Enabled for your kitchen' : 'Meal Recovery Disabled for your kitchen',
-          'success',
-        );
-        render();
-      } catch (err: any) {
-        recoveryToggleEl.checked = !targetChecked;
-        showToast(err.message || 'Failed to update Meal Recovery setting', 'error');
-      } finally {
-        isUpdatingRecoveryToggle = false;
-      }
+    // Meal Recovery Toggle Buttons — enable / disable provider's meal recovery policy across unique elements
+    const recoveryToggles = document.querySelectorAll<HTMLInputElement>('.recovery-toggle-switch');
+    recoveryToggles.forEach((toggleEl) => {
+      toggleEl.addEventListener('change', async () => {
+        if (!selectedHostel) return;
+        if (isUpdatingRecoveryToggle) return;
+        const targetChecked = toggleEl.checked;
+        isUpdatingRecoveryToggle = true;
+        try {
+          await updateProviderMealRecoveryEnabled(selectedHostel.id, targetChecked);
+          selectedHostel.mealRecoveryEnabled = targetChecked;
+          if (recoveryStats) recoveryStats.mealRecoveryEnabled = targetChecked;
+          showToast(
+            targetChecked ? 'Meal Recovery Enabled for your kitchen' : 'Meal Recovery Disabled for your kitchen',
+            'success',
+          );
+          render();
+        } catch (err: any) {
+          toggleEl.checked = !targetChecked;
+          showToast(err.message || 'Failed to update Meal Recovery setting', 'error');
+        } finally {
+          isUpdatingRecoveryToggle = false;
+        }
+      });
     });
 
     // Recovery Percentage Buttons — update provider's recovery policy
