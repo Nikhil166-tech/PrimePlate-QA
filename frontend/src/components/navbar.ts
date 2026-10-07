@@ -33,10 +33,7 @@ export function renderNavbar(): string {
       <i class="fa-solid fa-headset"></i> Contact Us
     </a>
     ${token && isStudent
-      ? `<button type="button" class="nav-item-btn nav-scan-qr-btn" style="background: none; border: none; cursor: pointer; color: inherit; font: inherit;">
-            <i class="fa-solid fa-camera"></i> Scan Meal QR
-          </button>
-          <a href="/student/dashboard" class="nav-item-btn ${currentPath === '/dashboard' || currentPath === '/student/dashboard' ? 'active' : ''}">
+      ? `<a href="/student/dashboard" class="nav-item-btn ${currentPath === '/dashboard' || currentPath === '/student/dashboard' ? 'active' : ''}">
             <i class="fa-solid fa-qrcode"></i> My Mess Card
           </a>
           <a href="/student/transactions" class="nav-item-btn ${currentPath.startsWith('/student/transactions') ? 'active' : ''}">

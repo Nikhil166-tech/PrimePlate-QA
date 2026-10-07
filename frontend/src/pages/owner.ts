@@ -452,39 +452,53 @@ export async function renderOwnerPortal() {
 
     const activePlans = providerMealPlans.filter((p: any) => p.isActive !== false);
     const primaryPlan = activePlans[0] || providerMealPlans[0];
-    const currentSellingPrice = Number(primaryPlan?.sellingPrice ?? primaryPlan?.pricePerMonth ?? selectedHostel?.monthlyPrice ?? 2999);
 
-    const mealTypeBadgeConfigs: Record<string, { label: string; color: string; bg: string }> = {
-      FULL_DAY: { label: 'Full Day', color: '#ea580c', bg: '#fff7ed' },
-      LUNCH_ONLY: { label: 'Lunch Only', color: '#0284c7', bg: '#f0f9ff' },
-      DINNER_ONLY: { label: 'Dinner Only', color: '#7c3aed', bg: '#faf5ff' },
+    const mealTypeBadgeConfigs: Record<string, { label: string; icon: string; color: string; bg: string; border: string }> = {
+      FULL_DAY: { label: 'Full Day Plan', icon: 'fa-sun', color: '#ea580c', bg: '#fff7ed', border: '#ffedd5' },
+      LUNCH_ONLY: { label: 'Lunch Only Plan', icon: 'fa-bowl-food', color: '#0284c7', bg: '#f0f9ff', border: '#e0f2fe' },
+      DINNER_ONLY: { label: 'Dinner Only Plan', icon: 'fa-moon', color: '#7c3aed', bg: '#faf5ff', border: '#f3e8ff' },
     };
 
-    const pricingDisplayHtml = activePlans.length > 0
-      ? `
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          ${activePlans.map((p: any) => {
-            const mType = p.mealType || 'FULL_DAY';
-            const mCfg = mealTypeBadgeConfigs[mType] || mealTypeBadgeConfigs.FULL_DAY;
-            const pSell = Number(p.sellingPrice ?? p.pricePerMonth ?? 0);
-            const pOrig = Number(p.originalPrice ?? p.pricePerMonth ?? pSell);
-            const pDisc = pOrig > pSell ? Math.floor(((pOrig - pSell) / pOrig) * 100) : 0;
-            const p1Day = p.customOneDayPrice ? Number(p.customOneDayPrice) : null;
-            return `
+    const displayPlans = activePlans.length > 0
+      ? activePlans
+      : [
+          { mealType: 'FULL_DAY', originalPrice: 2700, sellingPrice: selectedHostel?.monthlyPrice ?? 2500, customOneDayPrice: 99 },
+          { mealType: 'LUNCH_ONLY', originalPrice: 1800, sellingPrice: 1600, customOneDayPrice: 65 },
+          { mealType: 'DINNER_ONLY', originalPrice: 1800, sellingPrice: 1600, customOneDayPrice: 65 },
+        ];
+
+    const pricingDisplayHtml = `
+      <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+        ${displayPlans.map((p: any) => {
+          const mType = p.mealType || 'FULL_DAY';
+          const mCfg = mealTypeBadgeConfigs[mType] || mealTypeBadgeConfigs.FULL_DAY;
+          const pSell = Number(p.sellingPrice ?? p.pricePerMonth ?? 0);
+          const pOrig = Number(p.originalPrice ?? p.pricePerMonth ?? pSell);
+          const hasDiscount = pOrig > pSell;
+          const pDisc = hasDiscount ? Math.floor(((pOrig - pSell) / pOrig) * 100) : 0;
+          const saveAmt = hasDiscount ? Math.round(pOrig - pSell) : 0;
+          const p1Day = p.customOneDayPrice ? Number(p.customOneDayPrice) : null;
+
+          return `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; background: #ffffff; border: 1px solid ${mCfg.border}; border-radius: 10px; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="font-size: 11px; font-weight: 700; color: ${mCfg.color}; background: ${mCfg.bg}; padding: 2px 8px; border-radius: 999px;">${mCfg.label}</span>
-                ${pDisc > 0 ? `<span style="font-size: 12px; color: var(--color-neutral-400); text-decoration: line-through;">₹${pOrig.toLocaleString('en-IN')}</span>` : ''}
-                <span style="font-size: 14px; font-weight: 800; color: var(--color-neutral-900);">₹${pSell.toLocaleString('en-IN')} / mo</span>
-                ${pDisc > 0 ? `<span style="background: #dcfce7; color: #16a34a; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px;">${pDisc}% OFF</span>` : ''}
-                ${p1Day ? `<span style="font-size: 12px; font-weight: 600; color: var(--color-neutral-600);">(1-Day: ₹${p1Day.toLocaleString('en-IN')})</span>` : ''}
+                <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: ${mCfg.color}; background: ${mCfg.bg}; padding: 3px 10px; border-radius: 999px;">
+                  <i class="fa-solid ${mCfg.icon}"></i> ${mCfg.label}
+                </span>
+                ${p1Day ? `<span style="font-size: 11px; font-weight: 600; color: var(--color-neutral-600); background: var(--color-neutral-100); padding: 2px 8px; border-radius: 6px;">1-Day: ₹${p1Day.toLocaleString('en-IN')}</span>` : ''}
               </div>
-            `;
-          }).join('')}
-        </div>
-      `
-      : `
-        <span style="font-size: 15px; font-weight: 800; color: var(--color-neutral-900);">₹${currentSellingPrice.toLocaleString('en-IN')} / month</span>
-      `;
+
+              <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
+                ${hasDiscount && pDisc > 0 ? `<span style="font-size: 12px; color: var(--color-neutral-400); text-decoration: line-through;">₹${pOrig.toLocaleString('en-IN')}</span>` : ''}
+                <strong style="font-size: 14.5px; font-weight: 800; color: var(--color-neutral-900);">₹${pSell.toLocaleString('en-IN')} <span style="font-size: 11.5px; font-weight: 600; color: var(--color-neutral-500);">/ mo</span></strong>
+                ${hasDiscount && pDisc > 0 ? `<span style="background: #dcfce7; color: #16a34a; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 999px;">${pDisc}% OFF</span>` : ''}
+                ${hasDiscount && saveAmt > 0 ? `<span style="font-size: 11px; font-weight: 700; color: #059669;">Save ₹${saveAmt.toLocaleString('en-IN')}</span>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
 
 
     const isNewProvider = hostels.length === 0;
@@ -587,9 +601,9 @@ export async function renderOwnerPortal() {
             </span>
             <span style="font-size: 14px; font-weight: 800; color: var(--color-neutral-900);">
               ${isRecoveryEnabled
-                ? `Current Rate: <strong style="color: var(--color-primary-600); font-size: 16px;">${currentPct}%</strong>`
-                : `<span style="color: var(--color-neutral-500); font-size: 14px; font-weight: 700;">Service Disabled</span>`
-              }
+          ? `Current Rate: <strong style="color: var(--color-primary-600); font-size: 16px;">${currentPct}%</strong>`
+          : `<span style="color: var(--color-neutral-500); font-size: 14px; font-weight: 700;">Service Disabled</span>`
+        }
             </span>
           </div>
 
@@ -617,16 +631,16 @@ export async function renderOwnerPortal() {
             <span style="font-size: 11px; font-weight: 700; color: var(--color-neutral-500); text-transform: uppercase;">Select Recovery Percentage:</span>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;" class="recovery-percentage-button-group">
               ${[50, 60, 70, 80, 90, 100].map((pct) => {
-                const isActive = currentPct === pct;
-                return `
+          const isActive = currentPct === pct;
+          return `
                   <button type="button" class="set-recovery-pct-btn btn-outline-action" data-pct="${pct}" style="padding: 6px 14px; font-size: 12px; font-weight: 800; border-radius: 8px; cursor: pointer; transition: all 0.15s ease; ${isActive
-                    ? 'background: var(--color-primary-600); color: #fff; border-color: var(--color-primary-600); box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);'
-                    : 'background: #fff; color: var(--color-neutral-700); border-color: var(--color-neutral-300);'
-                  }">
+              ? 'background: var(--color-primary-600); color: #fff; border-color: var(--color-primary-600); box-shadow: 0 2px 6px rgba(234, 88, 12, 0.25);'
+              : 'background: #fff; color: var(--color-neutral-700); border-color: var(--color-neutral-300);'
+            }">
                     ${pct}%
                   </button>
                 `;
-              }).join('')}
+        }).join('')}
             </div>
           </div>
         ` : `
@@ -1600,21 +1614,21 @@ export async function renderOwnerPortal() {
                 `;
         })()}
 
-                  <div id="meal-plans-section" style="background: var(--color-neutral-50); border: 1px solid var(--color-neutral-200); border-radius: 14px; padding: 12px 14px; margin-bottom: 14px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                      <div>
-                        <span style="font-size: 11px; font-weight: 700; color: var(--color-neutral-500); text-transform: uppercase; display: block; margin-bottom: 2px;">Meal Plan Pricing</span>
-                        ${pricingDisplayHtml}
-                      </div>
-                      <button type="button" class="open-edit-price-btn btn-outline-action" style="padding: 6px 14px; font-size: 12px; font-weight: 700; background: #fff; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-pen-to-square"></i> Edit Plans
-                      </button>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px dashed var(--color-neutral-200); padding-top: 8px;">
+                  <div id="meal-plans-section" style="background: var(--color-neutral-50); border: 1px solid var(--color-neutral-200); border-radius: 14px; padding: 14px; margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                      <span style="font-size: 12px; font-weight: 800; color: var(--color-neutral-700); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-utensils" style="color: var(--color-primary-600);"></i> Meal Plan Pricing & Discounts
+                      </span>
                       <span style="font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: ${selectedHostel.acceptingSubscriptions !== false ? '#d1fae5' : '#fee2e2'}; color: ${selectedHostel.acceptingSubscriptions !== false ? '#047857' : '#b91c1c'};">
                         ${selectedHostel.acceptingSubscriptions !== false ? '🟢 Kitchen OPEN' : '🔴 Kitchen CLOSED'}
                       </span>
-                      <span style="font-size: 12px; font-weight: 600; color: var(--color-neutral-700);">👥 ${totalSubscribersCount} / ${selectedHostel.totalCapacity ?? 50}</span>
+                    </div>
+
+                    ${pricingDisplayHtml}
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px dashed var(--color-neutral-200); padding-top: 10px; margin-top: 10px;">
+                      <span style="font-size: 11.5px; color: var(--color-neutral-600);"><i class="fa-solid fa-circle-check" style="color: #16a34a;"></i> Available for PrimeMate subscriptions</span>
+                      <span style="font-size: 12px; font-weight: 600; color: var(--color-neutral-700);">👥 ${totalSubscribersCount} / ${selectedHostel.totalCapacity ?? 50} Subscribers</span>
                     </div>
                   </div>
 
@@ -1769,14 +1783,21 @@ export async function renderOwnerPortal() {
                     </div>
                   </div>
 
-                  <div style="background: var(--color-neutral-50); border: 1px solid var(--color-neutral-200); border-radius: 16px; padding: 14px; margin-bottom: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
-                      <div>
-                        ${pricingDisplayHtml}
-                      </div>
-                      <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; background: ${selectedHostel.acceptingSubscriptions !== false ? '#d1fae5' : '#fee2e2'}; color: ${selectedHostel.acceptingSubscriptions !== false ? '#047857' : '#b91c1c'}; border: 1px solid ${selectedHostel.acceptingSubscriptions !== false ? '#a7f3d0' : '#fca5a5'};">
-                        <span>${selectedHostel.acceptingSubscriptions !== false ? 'Kitchen OPEN' : 'Kitchen CLOSED'}</span>
-                      </div>
+                  <div id="desktop-meal-plans-section" style="background: var(--color-neutral-50); border: 1px solid var(--color-neutral-200); border-radius: 16px; padding: 16px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                      <span style="font-size: 13px; font-weight: 800; color: var(--color-neutral-700); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-utensils" style="color: var(--color-primary-600);"></i> Meal Plan Pricing & Discounts
+                      </span>
+                      <span style="font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: ${selectedHostel.acceptingSubscriptions !== false ? '#d1fae5' : '#fee2e2'}; color: ${selectedHostel.acceptingSubscriptions !== false ? '#047857' : '#b91c1c'}; border: 1px solid ${selectedHostel.acceptingSubscriptions !== false ? '#a7f3d0' : '#fca5a5'};">
+                        ${selectedHostel.acceptingSubscriptions !== false ? '🟢 Kitchen OPEN' : '🔴 Kitchen CLOSED'}
+                      </span>
+                    </div>
+
+                    ${pricingDisplayHtml}
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px dashed var(--color-neutral-200); padding-top: 10px; margin-top: 10px;">
+                      <span style="font-size: 12px; color: var(--color-neutral-600);"><i class="fa-solid fa-circle-check" style="color: #16a34a;"></i> Available for PrimeMate subscriptions</span>
+                      <span style="font-size: 12px; font-weight: 600; color: var(--color-neutral-700);">👥 ${totalSubscribersCount} / ${selectedHostel.totalCapacity ?? 50} Subscribers</span>
                     </div>
                   </div>
 
@@ -2137,20 +2158,20 @@ export async function renderOwnerPortal() {
 
           <form id="editPriceForm" style="display: flex; flex-direction: column; gap: 16px;">
             ${[
-              { type: 'FULL_DAY', title: 'Full Day Plan', subtitle: 'Breakfast + Lunch + Dinner', icon: 'fa-sun', color: '#ea580c', defaultOrig: 2700, defaultSell: 2500, defaultDay1: 99 },
-              { type: 'LUNCH_ONLY', title: 'Lunch Only Plan', subtitle: 'Lunch', icon: 'fa-bowl-food', color: '#0284c7', defaultOrig: 1800, defaultSell: 1600, defaultDay1: 65 },
-              { type: 'DINNER_ONLY', title: 'Dinner Only Plan', subtitle: 'Dinner', icon: 'fa-moon', color: '#7c3aed', defaultOrig: 1800, defaultSell: 1600, defaultDay1: 65 },
-            ].map((cfg) => {
-              const matchedPlan = providerMealPlans.find((p: any) => p.mealType === cfg.type || (!p.mealType && cfg.type === 'FULL_DAY'));
-              const isEnabled = matchedPlan ? matchedPlan.isActive !== false : (cfg.type === 'FULL_DAY');
-              const origVal = Number(matchedPlan?.originalPrice ?? matchedPlan?.pricePerMonth ?? (cfg.type === 'FULL_DAY' ? (selectedHostel?.monthlyPrice ?? cfg.defaultOrig) : cfg.defaultOrig));
-              const sellVal = Number(matchedPlan?.sellingPrice ?? matchedPlan?.pricePerMonth ?? (cfg.type === 'FULL_DAY' ? (selectedHostel?.monthlyPrice ?? cfg.defaultSell) : cfg.defaultSell));
-              const day1Val = Number(matchedPlan?.customOneDayPrice ?? cfg.defaultDay1);
-              const hasDisc = origVal > sellVal;
-              const discPct = hasDisc ? Math.floor(((origVal - sellVal) / origVal) * 100) : 0;
-              const discAmt = hasDisc ? origVal - sellVal : 0;
+        { type: 'FULL_DAY', title: 'Full Day Plan', subtitle: 'Breakfast + Lunch + Dinner', icon: 'fa-sun', color: '#ea580c', defaultOrig: 2700, defaultSell: 2500, defaultDay1: 99 },
+        { type: 'LUNCH_ONLY', title: 'Lunch Only Plan', subtitle: 'Lunch', icon: 'fa-bowl-food', color: '#0284c7', defaultOrig: 1800, defaultSell: 1600, defaultDay1: 65 },
+        { type: 'DINNER_ONLY', title: 'Dinner Only Plan', subtitle: 'Dinner', icon: 'fa-moon', color: '#7c3aed', defaultOrig: 1800, defaultSell: 1600, defaultDay1: 65 },
+      ].map((cfg) => {
+        const matchedPlan = providerMealPlans.find((p: any) => p.mealType === cfg.type || (!p.mealType && cfg.type === 'FULL_DAY'));
+        const isEnabled = matchedPlan ? matchedPlan.isActive !== false : (cfg.type === 'FULL_DAY');
+        const origVal = Number(matchedPlan?.originalPrice ?? matchedPlan?.pricePerMonth ?? (cfg.type === 'FULL_DAY' ? (selectedHostel?.monthlyPrice ?? cfg.defaultOrig) : cfg.defaultOrig));
+        const sellVal = Number(matchedPlan?.sellingPrice ?? matchedPlan?.pricePerMonth ?? (cfg.type === 'FULL_DAY' ? (selectedHostel?.monthlyPrice ?? cfg.defaultSell) : cfg.defaultSell));
+        const day1Val = Number(matchedPlan?.customOneDayPrice ?? cfg.defaultDay1);
+        const hasDisc = origVal > sellVal;
+        const discPct = hasDisc ? Math.floor(((origVal - sellVal) / origVal) * 100) : 0;
+        const discAmt = hasDisc ? origVal - sellVal : 0;
 
-              return `
+        return `
                 <div class="meal-type-config-card" style="border: 1px solid var(--color-neutral-200); border-radius: 16px; padding: 16px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
                     <div>
@@ -2187,20 +2208,20 @@ export async function renderOwnerPortal() {
                     <!-- Live Preview For This Meal Type -->
                     <div id="mPreview_${cfg.type}" style="background: var(--color-neutral-50); border: 1px solid var(--color-neutral-200); border-radius: 10px; padding: 8px 12px; font-size: 12px; min-height: 20px;">
                       ${hasDisc && discPct > 0
-                        ? `<span style="color: var(--color-neutral-400); text-decoration: line-through; margin-right: 6px;">₹${origVal.toLocaleString('en-IN')}</span>
+            ? `<span style="color: var(--color-neutral-400); text-decoration: line-through; margin-right: 6px;">₹${origVal.toLocaleString('en-IN')}</span>
                            <strong style="color: var(--color-neutral-900); margin-right: 6px;">₹${sellVal.toLocaleString('en-IN')} / mo</strong>
                            <span style="background: #dcfce7; color: #16a34a; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; margin-right: 6px;">${discPct}% OFF</span>
                            <span style="color: #059669; font-weight: 600; margin-right: 8px;">Save ₹${discAmt.toLocaleString('en-IN')}</span>
                            <span style="color: var(--color-neutral-600); font-weight: 600;">• 1-Day Pass: <strong>₹${day1Val.toLocaleString('en-IN')}</strong></span>`
-                        : `<strong style="color: var(--color-neutral-900); margin-right: 6px;">₹${sellVal.toLocaleString('en-IN')} / mo</strong>
+            : `<strong style="color: var(--color-neutral-900); margin-right: 6px;">₹${sellVal.toLocaleString('en-IN')} / mo</strong>
                            <span style="color: var(--color-neutral-500); margin-right: 8px;">(No discount)</span>
                            <span style="color: var(--color-neutral-600); font-weight: 600;">• 1-Day Pass: <strong>₹${day1Val.toLocaleString('en-IN')}</strong></span>`
-                      }
+          }
                     </div>
                   </div>
                 </div>
               `;
-            }).join('')}
+      }).join('')}
 
             <div class="modal-actions-mobile" style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
               <button type="button" id="cancelEditPriceBtn" class="btn-outline-action" style="padding: 10px 18px; font-size: 14px;">Cancel</button>
